@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: gesttrib_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gesttrib
+      POSTGRES_PASSWORD: gesttrib
+      POSTGRES_DB: gesttrib
+    ports:
+      # 5432 e 5433 costumam estar ocupadas por outros bancos locais
+      - "5434:5432"
+    volumes:
+      - gesttrib_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gesttrib -d gesttrib"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  gesttrib_pgdata:

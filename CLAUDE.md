@@ -8,7 +8,7 @@ auditoria e relatórios. Dados fictícios, não representa nenhuma prefeitura re
 
 ## Stack
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind 4
-Banco: a definir (PostgreSQL ou MySQL) com Prisma · Validação: Zod
+Banco: PostgreSQL com Prisma  Validação: Zod
 Testes: Vitest (regras de cálculo)
 
 ## Regras
