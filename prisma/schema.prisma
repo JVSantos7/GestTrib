@@ -6,3 +6,51 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum TipoPessoa {
+  FISICA
+  JURIDICA
+}
+
+enum AcaoAuditoria {
+  CRIACAO
+  ALTERACAO
+  EXCLUSAO
+}
+
+model Contribuinte {
+  id           String     @id @default(uuid()) @db.Uuid
+  tipoPessoa   TipoPessoa @map("tipo_pessoa")
+  // CPF (11) ou CNPJ (14), sem máscara. O CNPJ pode conter letras (formato alfanumérico de 2026).
+  documento    String     @unique @db.VarChar(14)
+  nome         String     @db.VarChar(150)
+  email        String?    @db.VarChar(150)
+  telefone     String?    @db.VarChar(11)
+  cep          String     @db.Char(8)
+  logradouro   String     @db.VarChar(150)
+  numero       String     @db.VarChar(10)
+  complemento  String?    @db.VarChar(60)
+  bairro       String     @db.VarChar(80)
+  cidade       String     @db.VarChar(80)
+  uf           String     @db.Char(2)
+  criadoEm     DateTime   @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm DateTime   @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+  // Exclusão lógica: preenchido quando o contribuinte é excluído.
+  excluidoEm   DateTime?  @map("excluido_em") @db.Timestamptz(3)
+
+  @@index([nome])
+  @@map("contribuintes")
+}
+
+model RegistroAuditoria {
+  id         String        @id @default(uuid()) @db.Uuid
+  entidade   String        @db.VarChar(50)
+  entidadeId String        @map("entidade_id") @db.Uuid
+  acao       AcaoAuditoria
+  // Retrato dos dados após a ação. O usuário responsável entra na Fase 7 (login/perfis).
+  dados      Json
+  criadoEm   DateTime      @default(now()) @map("criado_em") @db.Timestamptz(3)
+
+  @@index([entidade, entidadeId])
+  @@map("registros_auditoria")
+}
