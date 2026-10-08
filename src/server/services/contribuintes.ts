@@ -1,6 +1,9 @@
 import "server-only";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, type TipoPessoa } from "@/generated/prisma/client";
+import { limparDocumento } from "@/lib/documento";
+import { calcularPaginacao } from "@/lib/paginacao";
 import type { ContribuinteDados } from "@/lib/schemas/contribuinte";
+import { CONTRIBUINTES_POR_PAGINA } from "@/lib/schemas/filtros-contribuintes";
 import { prisma } from "@/server/db";
 import { registrarAuditoria } from "@/server/services/auditoria";
 
@@ -29,11 +32,41 @@ function traduzirErro(erro: unknown): never {
   throw erro;
 }
 
-export function listarContribuintes() {
-  return prisma.contribuinte.findMany({
-    where: { excluidoEm: null },
-    orderBy: { nome: "asc" },
+type OpcoesListagem = {
+  busca?: string;
+  tipo?: TipoPessoa;
+  pagina?: number;
+  porPagina?: number;
+};
+
+export async function listarContribuintes(opcoes: OpcoesListagem = {}) {
+  const { busca = "", tipo, pagina = 1, porPagina = CONTRIBUINTES_POR_PAGINA } = opcoes;
+
+  const where: Prisma.ContribuinteWhereInput = { excluidoEm: null };
+  if (tipo) where.tipoPessoa = tipo;
+  if (busca) {
+    // O mesmo termo procura no nome e no documento (este, sem a pontuação digitada).
+    const documento = limparDocumento(busca);
+    // O Prisma não escapa os curingas do LIKE: sem isso, buscar "%" ou "_" traria todos.
+    const nome = busca.replace(/[\\%_]/g, "\\$&");
+    where.OR = [
+      { nome: { contains: nome, mode: "insensitive" } },
+      ...(documento ? [{ documento: { contains: documento } }] : []),
+    ];
+  }
+
+  // Conta antes de buscar: uma página além da última é ajustada para a última.
+  const total = await prisma.contribuinte.count({ where });
+  const paginacao = calcularPaginacao(total, pagina, porPagina);
+  const itens = await prisma.contribuinte.findMany({
+    where,
+    // O id desempata nomes iguais, para a ordem não variar entre páginas.
+    orderBy: [{ nome: "asc" }, { id: "asc" }],
+    skip: paginacao.pular,
+    take: porPagina,
   });
+
+  return { itens, paginacao };
 }
 
 export async function buscarContribuinte(id: string) {
