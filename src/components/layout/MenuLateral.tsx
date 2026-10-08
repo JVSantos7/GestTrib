@@ -13,7 +13,7 @@ type ItemMenu = {
 
 const ITENS: ItemMenu[] = [
   { rotulo: "Início", href: "/", disponivel: true },
-  { rotulo: "Contribuintes", href: "/contribuintes", disponivel: false },
+  { rotulo: "Contribuintes", href: "/contribuintes", disponivel: true },
   { rotulo: "Imóveis", href: "/imoveis", disponivel: false },
   { rotulo: "IPTU", href: "/iptu", disponivel: false },
   { rotulo: "Guias", href: "/guias", disponivel: false },
