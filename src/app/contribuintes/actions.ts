@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { EstadoExclusao } from "@/components/BotaoExcluir";
 import { contribuinteSchema, type ContribuinteEntrada } from "@/lib/schemas/contribuinte";
 import {
   atualizarContribuinte,
   ContribuinteNaoEncontradoError,
+  ContribuintePossuiImoveisError,
   criarContribuinte,
   DocumentoJaCadastradoError,
   excluirContribuinte,
@@ -65,10 +67,11 @@ export async function salvarContribuinte(
   redirect(`/contribuintes/${contribuinteId}`);
 }
 
-export async function removerContribuinte(id: string) {
+export async function removerContribuinte(id: string): Promise<EstadoExclusao> {
   try {
     await excluirContribuinte(id);
   } catch (erro) {
+    if (erro instanceof ContribuintePossuiImoveisError) return { erro: erro.message };
     // Já excluído por outra pessoa: o resultado desejado é o mesmo, voltar à listagem.
     if (!(erro instanceof ContribuinteNaoEncontradoError)) throw erro;
   }

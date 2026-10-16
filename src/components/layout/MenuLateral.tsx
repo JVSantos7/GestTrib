@@ -14,7 +14,7 @@ type ItemMenu = {
 const ITENS: ItemMenu[] = [
   { rotulo: "Início", href: "/", disponivel: true },
   { rotulo: "Contribuintes", href: "/contribuintes", disponivel: true },
-  { rotulo: "Imóveis", href: "/imoveis", disponivel: false },
+  { rotulo: "Imóveis", href: "/imoveis", disponivel: true },
   { rotulo: "IPTU", href: "/iptu", disponivel: false },
   { rotulo: "Guias", href: "/guias", disponivel: false },
   { rotulo: "Relatórios", href: "/relatorios", disponivel: false },

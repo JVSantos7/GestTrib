@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MUNICIPIO } from "@/lib/municipio";
 
 export function Cabecalho() {
   return (
@@ -8,7 +9,7 @@ export function Cabecalho() {
           GestTrib
         </span>
         <span className="hidden text-sm text-zinc-500 sm:inline dark:text-zinc-400">
-          Gestão Tributária Municipal
+          Gestão Tributária · Município de {MUNICIPIO.nome}/{MUNICIPIO.uf}
         </span>
       </Link>
       <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">

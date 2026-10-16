@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import type { CampoContribuinte, EstadoFormulario } from "@/app/contribuintes/actions";
+import { CLASSE_CAMPO } from "@/components/form/estilos";
 import { UFS } from "@/lib/schemas/contribuinte";
 
 type Props = {
@@ -11,9 +12,6 @@ type Props = {
   rotuloEnviar: string;
   hrefCancelar: string;
 };
-
-const CLASSE_CAMPO =
-  "mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm shadow-xs outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 aria-invalid:border-red-500 dark:border-zinc-700 dark:bg-zinc-900";
 
 export function FormContribuinte({ acao, valoresIniciais, rotuloEnviar, hrefCancelar }: Props) {
   const [estado, enviar, pendente] = useActionState(acao, {});
