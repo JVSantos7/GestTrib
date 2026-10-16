@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { limparDocumento, validarCnpj, validarCpf } from "@/lib/documento";
+import { cep, somenteDigitos, textoObrigatorio, vazioParaNulo } from "@/lib/schemas/campos";
 
 export const TIPOS_PESSOA = ["FISICA", "JURIDICA"] as const;
 
@@ -8,22 +9,6 @@ export const UFS = [
   "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
   "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
 ] as const;
-
-const somenteDigitos = (valor: string) => valor.replace(/\D/g, "");
-
-function textoObrigatorio(campo: string, maximo: number) {
-  return z
-    .string({ error: `Informe ${campo}.` })
-    .trim()
-    .min(1, { error: `Informe ${campo}.` })
-    .max(maximo, { error: `Use no máximo ${maximo} caracteres.` });
-}
-
-// Campo opcional de formulário: string vazia vira null antes de validar.
-const vazioParaNulo = z
-  .string()
-  .trim()
-  .transform((valor) => (valor === "" ? null : valor));
 
 export const contribuinteSchema = z
   .object({
@@ -46,10 +31,7 @@ export const contribuinteSchema = z
           .regex(/^\d{10,11}$/, { error: "Informe o telefone com DDD (10 ou 11 dígitos)." })
           .nullable(),
       ),
-    cep: z
-      .string({ error: "Informe o CEP." })
-      .transform(somenteDigitos)
-      .pipe(z.string().length(8, { error: "O CEP deve ter 8 dígitos." })),
+    cep,
     logradouro: textoObrigatorio("o logradouro", 150),
     numero: textoObrigatorio("o número", 10),
     complemento: vazioParaNulo.pipe(
