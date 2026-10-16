@@ -4,11 +4,11 @@ import { limparDocumento } from "@/lib/documento";
 import { calcularPaginacao } from "@/lib/paginacao";
 import type { ContribuinteDados } from "@/lib/schemas/contribuinte";
 import { CONTRIBUINTES_POR_PAGINA } from "@/lib/schemas/filtros-contribuintes";
+import { ehUuid } from "@/lib/uuid";
 import { prisma } from "@/server/db";
 import { registrarAuditoria } from "@/server/services/auditoria";
 
 const ENTIDADE = "Contribuinte";
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class ContribuinteNaoEncontradoError extends Error {
   constructor() {
@@ -21,6 +21,16 @@ export class DocumentoJaCadastradoError extends Error {
   constructor() {
     super("Já existe um contribuinte cadastrado com este documento.");
     this.name = "DocumentoJaCadastradoError";
+  }
+}
+
+export class ContribuintePossuiImoveisError extends Error {
+  constructor(quantidade: number) {
+    super(
+      `Este contribuinte é proprietário de ${quantidade} ${quantidade === 1 ? "imóvel" : "imóveis"}. ` +
+        "Transfira ou exclua os imóveis antes de excluí-lo.",
+    );
+    this.name = "ContribuintePossuiImoveisError";
   }
 }
 
@@ -70,8 +80,7 @@ export async function listarContribuintes(opcoes: OpcoesListagem = {}) {
 }
 
 export async function buscarContribuinte(id: string) {
-  // Um id fora do formato UUID faria o banco rejeitar a consulta.
-  if (!UUID.test(id)) return null;
+  if (!ehUuid(id)) return null;
   return prisma.contribuinte.findFirst({ where: { id, excluidoEm: null } });
 }
 
@@ -93,7 +102,7 @@ export async function criarContribuinte(dados: ContribuinteDados) {
 }
 
 export async function atualizarContribuinte(id: string, dados: ContribuinteDados) {
-  if (!UUID.test(id)) throw new ContribuinteNaoEncontradoError();
+  if (!ehUuid(id)) throw new ContribuinteNaoEncontradoError();
   try {
     return await prisma.$transaction(async (tx) => {
       const existente = await tx.contribuinte.findFirst({ where: { id, excluidoEm: null } });
@@ -115,10 +124,14 @@ export async function atualizarContribuinte(id: string, dados: ContribuinteDados
 
 /** Exclusão lógica: o registro permanece no banco com `excluidoEm` preenchido. */
 export async function excluirContribuinte(id: string) {
-  if (!UUID.test(id)) throw new ContribuinteNaoEncontradoError();
+  if (!ehUuid(id)) throw new ContribuinteNaoEncontradoError();
   return prisma.$transaction(async (tx) => {
     const existente = await tx.contribuinte.findFirst({ where: { id, excluidoEm: null } });
     if (!existente) throw new ContribuinteNaoEncontradoError();
+
+    // Um imóvel ativo não pode ficar sem proprietário ativo.
+    const imoveis = await tx.imovel.count({ where: { contribuinteId: id, excluidoEm: null } });
+    if (imoveis > 0) throw new ContribuintePossuiImoveisError(imoveis);
 
     const contribuinte = await tx.contribuinte.update({
       where: { id },
