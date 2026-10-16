@@ -11,7 +11,8 @@
     "postinstall": "prisma generate",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
-    "db:migrate": "prisma migrate dev && prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "postdb:migrate": "prisma generate",
     "db:studio": "prisma studio"
   },
   "dependencies": {
