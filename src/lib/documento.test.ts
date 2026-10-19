@@ -4,6 +4,7 @@ import {
   formatarCpf,
   formatarDocumento,
   limparDocumento,
+  mascararDocumento,
   validarCnpj,
   validarCpf,
 } from "./documento";
@@ -84,6 +85,13 @@ describe("formatação", () => {
   it("escolhe a máscara pelo tamanho", () => {
     expect(formatarDocumento("52998224725")).toBe("529.982.247-25");
     expect(formatarDocumento("11222333000181")).toBe("11.222.333/0001-81");
+  });
+
+  it("mascara o CPF e mantém o CNPJ completo", () => {
+    expect(mascararDocumento("52998224725")).toBe("***.982.247-**");
+    expect(mascararDocumento("529.982.247-25")).toBe("***.982.247-**");
+    expect(mascararDocumento("11222333000181")).toBe("11.222.333/0001-81");
+    expect(mascararDocumento("12ABC34501DE35")).toBe("12.ABC.345/01DE-35");
   });
 
   it("devolve o valor original quando o tamanho não confere", () => {

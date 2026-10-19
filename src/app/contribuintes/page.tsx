@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Form from "next/form";
 import Link from "next/link";
-import { formatarDocumento } from "@/lib/documento";
+import { mascararDocumento } from "@/lib/documento";
 import { lerFiltrosContribuintes, urlContribuintes } from "@/lib/schemas/filtros-contribuintes";
 import { listarContribuintes } from "@/server/services/contribuintes";
 
@@ -105,7 +105,7 @@ export default async function Contribuintes({ searchParams }: PageProps<"/contri
                       </Link>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap tabular-nums">
-                      {formatarDocumento(contribuinte.documento)}
+                      {mascararDocumento(contribuinte.documento)}
                     </td>
                     <td className="px-4 py-3">
                       {contribuinte.tipoPessoa === "FISICA" ? "Física" : "Jurídica"}

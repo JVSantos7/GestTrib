@@ -64,6 +64,17 @@ export function formatarCnpj(valor: string): string {
   return cnpj.replace(/^(.{2})(.{3})(.{3})(.{4})(.{2})$/, "$1.$2.$3/$4-$5");
 }
 
+/**
+ * Versão para listagens: o CPF aparece só com os dígitos do meio ("***.982.247-**"),
+ * o bastante para conferir sem expor o número inteiro (minimização de dados, LGPD).
+ * O CNPJ é dado público de empresa e aparece completo.
+ */
+export function mascararDocumento(valor: string): string {
+  const documento = limparDocumento(valor);
+  if (documento.length !== 11) return formatarDocumento(documento);
+  return `***.${documento.slice(3, 6)}.${documento.slice(6, 9)}-**`;
+}
+
 export function formatarDocumento(valor: string): string {
   return limparDocumento(valor).length === 11 ? formatarCpf(valor) : formatarCnpj(valor);
 }
