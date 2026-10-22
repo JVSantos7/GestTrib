@@ -78,6 +78,84 @@ model Imovel {
   @@map("imoveis")
 }
 
+// ---------------------------------------------------------------------------
+// Autenticação (Better Auth). Os nomes de models e campos seguem o vocabulário
+// da biblioteca, que lê e grava essas tabelas sozinha; no banco ficam em português.
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String    @db.VarChar(150)
+  // Login do sistema. Único: dois usuários não podem ter o mesmo e-mail.
+  email         String    @unique @db.VarChar(150)
+  emailVerified Boolean   @default(false) @map("email_verificado")
+  image         String?   @map("imagem")
+  createdAt     DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+  // Plugin admin: perfil de acesso e bloqueio do usuário.
+  role          String?   @map("perfil") @db.VarChar(30)
+  banned        Boolean?  @default(false) @map("bloqueado")
+  banReason     String?   @map("motivo_bloqueio")
+  banExpires    DateTime? @map("bloqueio_expira_em") @db.Timestamptz(3)
+
+  sessions Session[]
+  accounts Account[]
+
+  @@map("usuarios")
+}
+
+model Session {
+  id             String   @id @default(uuid()) @db.Uuid
+  // Valor sorteado que vai no cookie; quem tem o token "é" o usuário até a sessão expirar.
+  token          String   @unique
+  expiresAt      DateTime @map("expira_em") @db.Timestamptz(3)
+  ipAddress      String?  @map("ip")
+  userAgent      String?  @map("navegador")
+  userId         String   @map("usuario_id") @db.Uuid
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?  @map("personificado_por")
+  createdAt      DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("sessoes")
+}
+
+// Forma de login do usuário. Aqui só existe "credential" (e-mail e senha),
+// e o campo password guarda o hash da senha, nunca a senha em si.
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  accountId             String    @map("conta_id")
+  providerId            String    @map("provedor")
+  userId                String    @map("usuario_id") @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expira_em") @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expira_em") @db.Timestamptz(3)
+  scope                 String?   @map("escopo")
+  password              String?   @map("senha_hash")
+  createdAt             DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("contas")
+}
+
+// Códigos temporários (ex.: redefinição de senha), usados pela biblioteca.
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String   @map("identificador")
+  value      String   @map("valor")
+  expiresAt  DateTime @map("expira_em") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+
+  @@index([identifier])
+  @@map("verificacoes")
+}
+
 model RegistroAuditoria {
   id         String        @id @default(uuid()) @db.Uuid
   entidade   String        @db.VarChar(50)
