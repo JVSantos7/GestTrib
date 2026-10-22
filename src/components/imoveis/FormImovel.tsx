@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import type { CampoImovel, EstadoFormularioImovel } from "@/app/imoveis/actions";
+import type { CampoImovel, EstadoFormularioImovel } from "@/app/(sistema)/imoveis/actions";
 import { CLASSE_BOTAO_PRIMARIO, CLASSE_BOTAO_SECUNDARIO, CLASSE_CAMPO } from "@/components/form/estilos";
 import { MUNICIPIO } from "@/lib/municipio";
 import { ROTULOS_USO, USOS_IMOVEL } from "@/lib/schemas/imovel";

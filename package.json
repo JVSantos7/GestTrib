@@ -13,7 +13,8 @@
     "db:down": "docker compose down",
     "db:migrate": "prisma migrate dev",
     "postdb:migrate": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "criar-admin": "tsx --conditions=react-server scripts/criar-admin.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
@@ -37,6 +38,7 @@
     "eslint-config-next": "16.3.8",
     "prisma": "7.10.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.3"
   }

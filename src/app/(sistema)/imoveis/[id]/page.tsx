@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { removerImovel } from "@/app/imoveis/actions";
+import { removerImovel } from "@/app/(sistema)/imoveis/actions";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { CLASSE_BOTAO_PRIMARIO } from "@/components/form/estilos";
 import { formatarDecimalBr } from "@/lib/decimal";

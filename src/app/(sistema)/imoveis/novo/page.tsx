@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { salvarImovel } from "@/app/imoveis/actions";
+import { salvarImovel } from "@/app/(sistema)/imoveis/actions";
 import { FormImovel } from "@/components/imoveis/FormImovel";
 import { formatarDocumento } from "@/lib/documento";
 import { buscarContribuinte } from "@/server/services/contribuintes";

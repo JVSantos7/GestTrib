@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { salvarContribuinte } from "@/app/contribuintes/actions";
+import { salvarContribuinte } from "@/app/(sistema)/contribuintes/actions";
 import { FormContribuinte } from "@/components/contribuintes/FormContribuinte";
 import { formatarDocumento } from "@/lib/documento";
 import { formatarCep, formatarTelefone } from "@/lib/formatacao";

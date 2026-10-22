@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import type { CampoContribuinte, EstadoFormulario } from "@/app/contribuintes/actions";
+import type { CampoContribuinte, EstadoFormulario } from "@/app/(sistema)/contribuintes/actions";
 import { CLASSE_CAMPO } from "@/components/form/estilos";
 import { UFS } from "@/lib/schemas/contribuinte";
 

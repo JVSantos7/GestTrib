@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { salvarImovel } from "@/app/imoveis/actions";
+import { salvarImovel } from "@/app/(sistema)/imoveis/actions";
 import { FormImovel } from "@/components/imoveis/FormImovel";
 import { decimalEhZero, formatarDecimalBr } from "@/lib/decimal";
 import { formatarDocumento } from "@/lib/documento";

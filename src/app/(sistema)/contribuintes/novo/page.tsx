@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { salvarContribuinte } from "@/app/contribuintes/actions";
+import { salvarContribuinte } from "@/app/(sistema)/contribuintes/actions";
 import { FormContribuinte } from "@/components/contribuintes/FormContribuinte";
 
 export const metadata: Metadata = { title: "Novo contribuinte" };

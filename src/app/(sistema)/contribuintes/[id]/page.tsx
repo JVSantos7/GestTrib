@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { removerContribuinte } from "@/app/contribuintes/actions";
+import { removerContribuinte } from "@/app/(sistema)/contribuintes/actions";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { CLASSE_BOTAO_PRIMARIO } from "@/components/form/estilos";
 import { formatarDocumento } from "@/lib/documento";
