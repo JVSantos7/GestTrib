@@ -12,6 +12,7 @@ import {
   DocumentoJaCadastradoError,
   excluirContribuinte,
 } from "@/server/services/contribuintes";
+import { AcessoNegadoError, exigirPermissaoAcao } from "@/server/sessao";
 
 export type CampoContribuinte = keyof ContribuinteEntrada;
 
@@ -30,6 +31,13 @@ export async function salvarContribuinte(
   _estadoAnterior: EstadoFormulario,
   formData: FormData,
 ): Promise<EstadoFormulario> {
+  try {
+    await exigirPermissaoAcao({ contribuinte: [id ? "editar" : "criar"] });
+  } catch (erro) {
+    if (erro instanceof AcessoNegadoError) return { mensagem: erro.message };
+    throw erro;
+  }
+
   const valores = Object.fromEntries(
     CAMPOS.map((campo) => [campo, String(formData.get(campo) ?? "")]),
   ) as Record<CampoContribuinte, string>;
@@ -69,8 +77,10 @@ export async function salvarContribuinte(
 
 export async function removerContribuinte(id: string): Promise<EstadoExclusao> {
   try {
+    await exigirPermissaoAcao({ contribuinte: ["excluir"] });
     await excluirContribuinte(id);
   } catch (erro) {
+    if (erro instanceof AcessoNegadoError) return { erro: erro.message };
     if (erro instanceof ContribuintePossuiImoveisError) return { erro: erro.message };
     // Já excluído por outra pessoa: o resultado desejado é o mesmo, voltar à listagem.
     if (!(erro instanceof ContribuinteNaoEncontradoError)) throw erro;

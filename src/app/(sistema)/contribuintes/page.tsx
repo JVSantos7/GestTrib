@@ -4,6 +4,7 @@ import Link from "next/link";
 import { mascararDocumento } from "@/lib/documento";
 import { lerFiltrosContribuintes, urlContribuintes } from "@/lib/schemas/filtros-contribuintes";
 import { listarContribuintes } from "@/server/services/contribuintes";
+import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Contribuintes" };
 
@@ -13,6 +14,8 @@ const CLASSE_PAGINA =
   "rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium dark:border-zinc-700";
 
 export default async function Contribuintes({ searchParams }: PageProps<"/contribuintes">) {
+  await exigirPermissaoPagina({ contribuinte: ["ver"] });
+  const podeCriar = await pode({ contribuinte: ["criar"] });
   const filtros = lerFiltrosContribuintes(await searchParams);
   const { itens, paginacao } = await listarContribuintes(filtros);
   const filtrando = Boolean(filtros.busca || filtros.tipo);
@@ -21,12 +24,14 @@ export default async function Contribuintes({ searchParams }: PageProps<"/contri
     <div className="max-w-5xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Contribuintes</h1>
-        <Link
-          href="/contribuintes/novo"
-          className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
-        >
-          Novo contribuinte
-        </Link>
+        {podeCriar && (
+          <Link
+            href="/contribuintes/novo"
+            className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
+          >
+            Novo contribuinte
+          </Link>
+        )}
       </div>
 
       <Form

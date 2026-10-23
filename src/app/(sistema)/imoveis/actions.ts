@@ -12,6 +12,7 @@ import {
   InscricaoJaCadastradaError,
   ProprietarioNaoEncontradoError,
 } from "@/server/services/imoveis";
+import { AcessoNegadoError, exigirPermissaoAcao } from "@/server/sessao";
 
 export type CampoImovel = keyof ImovelEntrada;
 
@@ -31,6 +32,13 @@ export async function salvarImovel(
   _estadoAnterior: EstadoFormularioImovel,
   formData: FormData,
 ): Promise<EstadoFormularioImovel> {
+  try {
+    await exigirPermissaoAcao({ imovel: [id ? "editar" : "criar"] });
+  } catch (erro) {
+    if (erro instanceof AcessoNegadoError) return { mensagem: erro.message };
+    throw erro;
+  }
+
   const valores = Object.fromEntries(
     CAMPOS.map((campo) => [campo, String(formData.get(campo) ?? "")]),
   ) as Record<CampoImovel, string>;
@@ -68,8 +76,10 @@ export async function salvarImovel(
 
 export async function removerImovel(id: string): Promise<EstadoExclusao> {
   try {
+    await exigirPermissaoAcao({ imovel: ["excluir"] });
     await excluirImovel(id);
   } catch (erro) {
+    if (erro instanceof AcessoNegadoError) return { erro: erro.message };
     // Já excluído por outra pessoa: o resultado desejado é o mesmo, voltar à listagem.
     if (!(erro instanceof ImovelNaoEncontradoError)) throw erro;
   }

@@ -7,10 +7,12 @@ import { formatarDocumento } from "@/lib/documento";
 import { formatarCep } from "@/lib/formatacao";
 import { formatarInscricao } from "@/lib/schemas/imovel";
 import { buscarImovel } from "@/server/services/imoveis";
+import { exigirPermissaoPagina } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Editar imóvel" };
 
 export default async function EditarImovel({ params }: PageProps<"/imoveis/[id]/editar">) {
+  await exigirPermissaoPagina({ imovel: ["editar"] });
   const { id } = await params;
   const imovel = await buscarImovel(id);
   if (!imovel) notFound();

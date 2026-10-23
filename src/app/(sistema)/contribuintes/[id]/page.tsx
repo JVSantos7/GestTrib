@@ -9,6 +9,7 @@ import { formatarCep, formatarDataHora, formatarTelefone } from "@/lib/formataca
 import { formatarInscricao, ROTULOS_USO } from "@/lib/schemas/imovel";
 import { buscarContribuinte } from "@/server/services/contribuintes";
 import { listarImoveisDoContribuinte } from "@/server/services/imoveis";
+import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Contribuinte" };
 
@@ -22,6 +23,13 @@ function Dado({ rotulo, valor }: { rotulo: string; valor: string | null }) {
 }
 
 export default async function DetalhesContribuinte({ params }: PageProps<"/contribuintes/[id]">) {
+  await exigirPermissaoPagina({ contribuinte: ["ver"] });
+  const [podeEditar, podeExcluir, podeCriarImovel] = await Promise.all([
+    pode({ contribuinte: ["editar"] }),
+    pode({ contribuinte: ["excluir"] }),
+    pode({ imovel: ["criar"] }),
+  ]);
+
   const { id } = await params;
   const contribuinte = await buscarContribuinte(id);
   if (!contribuinte) notFound();
@@ -45,13 +53,17 @@ export default async function DetalhesContribuinte({ params }: PageProps<"/contr
       <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{contribuinte.nome}</h1>
         <div className="flex items-start gap-2">
-          <Link href={`/contribuintes/${contribuinte.id}/editar`} className={CLASSE_BOTAO_PRIMARIO}>
-            Editar
-          </Link>
-          <BotaoExcluir
-            acao={removerContribuinte.bind(null, contribuinte.id)}
-            confirmacao={`Excluir o contribuinte "${contribuinte.nome}"?`}
-          />
+          {podeEditar && (
+            <Link href={`/contribuintes/${contribuinte.id}/editar`} className={CLASSE_BOTAO_PRIMARIO}>
+              Editar
+            </Link>
+          )}
+          {podeExcluir && (
+            <BotaoExcluir
+              acao={removerContribuinte.bind(null, contribuinte.id)}
+              confirmacao={`Excluir o contribuinte "${contribuinte.nome}"?`}
+            />
+          )}
         </div>
       </div>
 
@@ -77,12 +89,14 @@ export default async function DetalhesContribuinte({ params }: PageProps<"/contr
           <h2 id="titulo-imoveis" className="text-lg font-semibold">
             Imóveis <span className="font-normal text-zinc-500">({imoveis.length})</span>
           </h2>
-          <Link
-            href={`/imoveis/novo?contribuinte=${contribuinte.id}`}
-            className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
-          >
-            Novo imóvel
-          </Link>
+          {podeCriarImovel && (
+            <Link
+              href={`/imoveis/novo?contribuinte=${contribuinte.id}`}
+              className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            >
+              Novo imóvel
+            </Link>
+          )}
         </div>
 
         {imoveis.length === 0 ? (

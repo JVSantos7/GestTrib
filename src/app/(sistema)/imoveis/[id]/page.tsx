@@ -10,6 +10,7 @@ import { formatarCep, formatarDataHora } from "@/lib/formatacao";
 import { MUNICIPIO } from "@/lib/municipio";
 import { formatarInscricao, ROTULOS_USO } from "@/lib/schemas/imovel";
 import { buscarImovel } from "@/server/services/imoveis";
+import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Imóvel" };
 
@@ -23,6 +24,12 @@ function Dado({ rotulo, children }: { rotulo: string; children: React.ReactNode 
 }
 
 export default async function DetalhesImovel({ params }: PageProps<"/imoveis/[id]">) {
+  await exigirPermissaoPagina({ imovel: ["ver"] });
+  const [podeEditar, podeExcluir] = await Promise.all([
+    pode({ imovel: ["editar"] }),
+    pode({ imovel: ["excluir"] }),
+  ]);
+
   const { id } = await params;
   const imovel = await buscarImovel(id);
   if (!imovel) notFound();
@@ -44,13 +51,17 @@ export default async function DetalhesImovel({ params }: PageProps<"/imoveis/[id
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{ROTULOS_USO[imovel.uso]}</p>
         </div>
         <div className="flex items-start gap-2">
-          <Link href={`/imoveis/${imovel.id}/editar`} className={CLASSE_BOTAO_PRIMARIO}>
-            Editar
-          </Link>
-          <BotaoExcluir
-            acao={removerImovel.bind(null, imovel.id)}
-            confirmacao={`Excluir o imóvel ${inscricao}?`}
-          />
+          {podeEditar && (
+            <Link href={`/imoveis/${imovel.id}/editar`} className={CLASSE_BOTAO_PRIMARIO}>
+              Editar
+            </Link>
+          )}
+          {podeExcluir && (
+            <BotaoExcluir
+              acao={removerImovel.bind(null, imovel.id)}
+              confirmacao={`Excluir o imóvel ${inscricao}?`}
+            />
+          )}
         </div>
       </div>
 

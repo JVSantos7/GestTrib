@@ -6,6 +6,7 @@ import { formatarDecimalBr } from "@/lib/decimal";
 import { lerFiltrosImoveis, urlImoveis } from "@/lib/schemas/filtros-imoveis";
 import { formatarInscricao, ROTULOS_USO, USOS_IMOVEL } from "@/lib/schemas/imovel";
 import { listarImoveis } from "@/server/services/imoveis";
+import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Imóveis" };
 
@@ -13,6 +14,8 @@ const CLASSE_PAGINA =
   "rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium dark:border-zinc-700";
 
 export default async function Imoveis({ searchParams }: PageProps<"/imoveis">) {
+  await exigirPermissaoPagina({ imovel: ["ver"] });
+  const podeCriar = await pode({ imovel: ["criar"] });
   const filtros = lerFiltrosImoveis(await searchParams);
   const { itens, paginacao } = await listarImoveis(filtros);
   const filtrando = Boolean(filtros.busca || filtros.uso);
@@ -21,9 +24,11 @@ export default async function Imoveis({ searchParams }: PageProps<"/imoveis">) {
     <div className="max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Imóveis</h1>
-        <Link href="/imoveis/novo" className={CLASSE_BOTAO_PRIMARIO}>
-          Novo imóvel
-        </Link>
+        {podeCriar && (
+          <Link href="/imoveis/novo" className={CLASSE_BOTAO_PRIMARIO}>
+            Novo imóvel
+          </Link>
+        )}
       </div>
 
       <Form

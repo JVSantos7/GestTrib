@@ -3,11 +3,13 @@ import { salvarImovel } from "@/app/(sistema)/imoveis/actions";
 import { FormImovel } from "@/components/imoveis/FormImovel";
 import { formatarDocumento } from "@/lib/documento";
 import { buscarContribuinte } from "@/server/services/contribuintes";
+import { exigirPermissaoPagina } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Novo imóvel" };
 
 export default async function NovoImovel({ searchParams }: PageProps<"/imoveis/novo">) {
   // Vindo da página do contribuinte (?contribuinte=<id>), o proprietário já vem preenchido.
+  await exigirPermissaoPagina({ imovel: ["criar"] });
   const { contribuinte: contribuinteId } = await searchParams;
   const proprietario =
     typeof contribuinteId === "string" ? await buscarContribuinte(contribuinteId) : null;

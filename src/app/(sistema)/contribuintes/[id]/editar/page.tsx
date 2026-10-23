@@ -5,12 +5,14 @@ import { FormContribuinte } from "@/components/contribuintes/FormContribuinte";
 import { formatarDocumento } from "@/lib/documento";
 import { formatarCep, formatarTelefone } from "@/lib/formatacao";
 import { buscarContribuinte } from "@/server/services/contribuintes";
+import { exigirPermissaoPagina } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Editar contribuinte" };
 
 export default async function EditarContribuinte({
   params,
 }: PageProps<"/contribuintes/[id]/editar">) {
+  await exigirPermissaoPagina({ contribuinte: ["editar"] });
   const { id } = await params;
   const contribuinte = await buscarContribuinte(id);
   if (!contribuinte) notFound();
