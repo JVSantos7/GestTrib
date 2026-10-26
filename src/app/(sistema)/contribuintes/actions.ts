@@ -12,7 +12,7 @@ import {
   DocumentoJaCadastradoError,
   excluirContribuinte,
 } from "@/server/services/contribuintes";
-import { AcessoNegadoError, exigirPermissaoAcao } from "@/server/sessao";
+import { AcessoNegadoError, exigirPermissaoAcao, type UsuarioLogado } from "@/server/sessao";
 
 export type CampoContribuinte = keyof ContribuinteEntrada;
 
@@ -31,8 +31,9 @@ export async function salvarContribuinte(
   _estadoAnterior: EstadoFormulario,
   formData: FormData,
 ): Promise<EstadoFormulario> {
+  let responsavel: UsuarioLogado;
   try {
-    await exigirPermissaoAcao({ contribuinte: [id ? "editar" : "criar"] });
+    responsavel = await exigirPermissaoAcao({ contribuinte: [id ? "editar" : "criar"] });
   } catch (erro) {
     if (erro instanceof AcessoNegadoError) return { mensagem: erro.message };
     throw erro;
@@ -54,8 +55,8 @@ export async function salvarContribuinte(
   let contribuinteId: string;
   try {
     const contribuinte = id
-      ? await atualizarContribuinte(id, resultado.data)
-      : await criarContribuinte(resultado.data);
+      ? await atualizarContribuinte(id, resultado.data, responsavel)
+      : await criarContribuinte(resultado.data, responsavel);
     contribuinteId = contribuinte.id;
   } catch (erro) {
     if (erro instanceof DocumentoJaCadastradoError) {
@@ -77,8 +78,8 @@ export async function salvarContribuinte(
 
 export async function removerContribuinte(id: string): Promise<EstadoExclusao> {
   try {
-    await exigirPermissaoAcao({ contribuinte: ["excluir"] });
-    await excluirContribuinte(id);
+    const responsavel = await exigirPermissaoAcao({ contribuinte: ["excluir"] });
+    await excluirContribuinte(id, responsavel);
   } catch (erro) {
     if (erro instanceof AcessoNegadoError) return { erro: erro.message };
     if (erro instanceof ContribuintePossuiImoveisError) return { erro: erro.message };

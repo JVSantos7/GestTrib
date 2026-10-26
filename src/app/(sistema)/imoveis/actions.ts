@@ -12,7 +12,7 @@ import {
   InscricaoJaCadastradaError,
   ProprietarioNaoEncontradoError,
 } from "@/server/services/imoveis";
-import { AcessoNegadoError, exigirPermissaoAcao } from "@/server/sessao";
+import { AcessoNegadoError, exigirPermissaoAcao, type UsuarioLogado } from "@/server/sessao";
 
 export type CampoImovel = keyof ImovelEntrada;
 
@@ -32,8 +32,9 @@ export async function salvarImovel(
   _estadoAnterior: EstadoFormularioImovel,
   formData: FormData,
 ): Promise<EstadoFormularioImovel> {
+  let responsavel: UsuarioLogado;
   try {
-    await exigirPermissaoAcao({ imovel: [id ? "editar" : "criar"] });
+    responsavel = await exigirPermissaoAcao({ imovel: [id ? "editar" : "criar"] });
   } catch (erro) {
     if (erro instanceof AcessoNegadoError) return { mensagem: erro.message };
     throw erro;
@@ -54,7 +55,7 @@ export async function salvarImovel(
 
   let imovel: { id: string; contribuinteId: string };
   try {
-    imovel = id ? await atualizarImovel(id, resultado.data) : await criarImovel(resultado.data);
+    imovel = id ? await atualizarImovel(id, resultado.data, responsavel) : await criarImovel(resultado.data, responsavel);
   } catch (erro) {
     if (erro instanceof InscricaoJaCadastradaError) {
       return { mensagem: CORRIJA, erros: { inscricao: erro.message }, valores };
@@ -76,8 +77,8 @@ export async function salvarImovel(
 
 export async function removerImovel(id: string): Promise<EstadoExclusao> {
   try {
-    await exigirPermissaoAcao({ imovel: ["excluir"] });
-    await excluirImovel(id);
+    const responsavel = await exigirPermissaoAcao({ imovel: ["excluir"] });
+    await excluirImovel(id, responsavel);
   } catch (erro) {
     if (erro instanceof AcessoNegadoError) return { erro: erro.message };
     // Já excluído por outra pessoa: o resultado desejado é o mesmo, voltar à listagem.

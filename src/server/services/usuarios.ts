@@ -81,9 +81,7 @@ function garantirQueNaoEhVoceMesmo(id: string, responsavel: UsuarioLogado, mensa
  * porque a biblioteca usa as conexões dela; se a auditoria falhar, o erro aparece para o usuário.
  */
 async function auditar(entidadeId: string, acao: "CRIACAO" | "ALTERACAO", responsavel: UsuarioLogado, dados: object) {
-  await prisma.$transaction((tx) =>
-    registrarAuditoria(tx, { entidade: ENTIDADE, entidadeId, acao, dados: { ...dados, responsavel: responsavel.email } }),
-  );
+  await prisma.$transaction((tx) => registrarAuditoria(tx, { entidade: ENTIDADE, entidadeId, acao, dados, responsavel }));
 }
 
 export async function criarUsuario(dados: NovoUsuario, responsavel: UsuarioLogado) {

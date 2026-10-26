@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { alterarPerfilAcao, alterarSituacaoAcao, redefinirSenhaAcao } from "@/app/(sistema)/usuarios/actions";
+import { Historico } from "@/components/Historico";
 import { BotaoSituacao, FormPerfil, FormSenha } from "@/components/usuarios/FormulariosUsuario";
 import { formatarDataHora } from "@/lib/formatacao";
 import { ROTULOS_PERFIL, type Perfil } from "@/lib/permissoes";
@@ -67,6 +68,8 @@ export default async function DetalhesUsuario({ params }: PageProps<"/usuarios/[
           </Secao>
         )}
       </div>
+
+      <Historico entidade="Usuario" entidadeId={usuario.id} />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import type { ImovelDados } from "@/lib/schemas/imovel";
 import { ehUuid } from "@/lib/uuid";
 import { prisma } from "@/server/db";
 import { registrarAuditoria } from "@/server/services/auditoria";
+import type { UsuarioLogado } from "@/server/sessao";
 
 const ENTIDADE = "Imovel";
 
@@ -110,7 +111,7 @@ export async function buscarImovel(id: string) {
   });
 }
 
-export async function criarImovel(dados: ImovelDados) {
+export async function criarImovel(dados: ImovelDados, responsavel: UsuarioLogado) {
   try {
     return await prisma.$transaction(async (tx) => {
       const imovel = await tx.imovel.create({ data: await montarDados(tx, dados) });
@@ -119,6 +120,7 @@ export async function criarImovel(dados: ImovelDados) {
         entidadeId: imovel.id,
         acao: "CRIACAO",
         dados: imovel,
+        responsavel,
       });
       return imovel;
     });
@@ -128,7 +130,7 @@ export async function criarImovel(dados: ImovelDados) {
 }
 
 /** Também é como se transfere o imóvel: basta informar o documento do novo proprietário. */
-export async function atualizarImovel(id: string, dados: ImovelDados) {
+export async function atualizarImovel(id: string, dados: ImovelDados, responsavel: UsuarioLogado) {
   if (!ehUuid(id)) throw new ImovelNaoEncontradoError();
   try {
     return await prisma.$transaction(async (tx) => {
@@ -141,6 +143,7 @@ export async function atualizarImovel(id: string, dados: ImovelDados) {
         entidadeId: id,
         acao: "ALTERACAO",
         dados: imovel,
+        responsavel,
       });
       return imovel;
     });
@@ -150,7 +153,7 @@ export async function atualizarImovel(id: string, dados: ImovelDados) {
 }
 
 /** Exclusão lógica: o registro permanece no banco com `excluidoEm` preenchido. */
-export async function excluirImovel(id: string) {
+export async function excluirImovel(id: string, responsavel: UsuarioLogado) {
   if (!ehUuid(id)) throw new ImovelNaoEncontradoError();
   return prisma.$transaction(async (tx) => {
     const existente = await tx.imovel.findFirst({ where: { id, excluidoEm: null } });
@@ -162,6 +165,7 @@ export async function excluirImovel(id: string) {
       entidadeId: id,
       acao: "EXCLUSAO",
       dados: imovel,
+      responsavel,
     });
     return imovel;
   });

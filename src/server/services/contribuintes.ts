@@ -7,6 +7,7 @@ import { CONTRIBUINTES_POR_PAGINA } from "@/lib/schemas/filtros-contribuintes";
 import { ehUuid } from "@/lib/uuid";
 import { prisma } from "@/server/db";
 import { registrarAuditoria } from "@/server/services/auditoria";
+import type { UsuarioLogado } from "@/server/sessao";
 
 const ENTIDADE = "Contribuinte";
 
@@ -84,7 +85,7 @@ export async function buscarContribuinte(id: string) {
   return prisma.contribuinte.findFirst({ where: { id, excluidoEm: null } });
 }
 
-export async function criarContribuinte(dados: ContribuinteDados) {
+export async function criarContribuinte(dados: ContribuinteDados, responsavel: UsuarioLogado) {
   try {
     return await prisma.$transaction(async (tx) => {
       const contribuinte = await tx.contribuinte.create({ data: dados });
@@ -93,6 +94,7 @@ export async function criarContribuinte(dados: ContribuinteDados) {
         entidadeId: contribuinte.id,
         acao: "CRIACAO",
         dados: contribuinte,
+        responsavel,
       });
       return contribuinte;
     });
@@ -101,7 +103,7 @@ export async function criarContribuinte(dados: ContribuinteDados) {
   }
 }
 
-export async function atualizarContribuinte(id: string, dados: ContribuinteDados) {
+export async function atualizarContribuinte(id: string, dados: ContribuinteDados, responsavel: UsuarioLogado) {
   if (!ehUuid(id)) throw new ContribuinteNaoEncontradoError();
   try {
     return await prisma.$transaction(async (tx) => {
@@ -114,6 +116,7 @@ export async function atualizarContribuinte(id: string, dados: ContribuinteDados
         entidadeId: id,
         acao: "ALTERACAO",
         dados: contribuinte,
+        responsavel,
       });
       return contribuinte;
     });
@@ -123,7 +126,7 @@ export async function atualizarContribuinte(id: string, dados: ContribuinteDados
 }
 
 /** Exclusão lógica: o registro permanece no banco com `excluidoEm` preenchido. */
-export async function excluirContribuinte(id: string) {
+export async function excluirContribuinte(id: string, responsavel: UsuarioLogado) {
   if (!ehUuid(id)) throw new ContribuinteNaoEncontradoError();
   return prisma.$transaction(async (tx) => {
     const existente = await tx.contribuinte.findFirst({ where: { id, excluidoEm: null } });
@@ -142,6 +145,7 @@ export async function excluirContribuinte(id: string) {
       entidadeId: id,
       acao: "EXCLUSAO",
       dados: contribuinte,
+      responsavel,
     });
     return contribuinte;
   });

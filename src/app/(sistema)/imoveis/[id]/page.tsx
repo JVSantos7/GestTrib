@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { removerImovel } from "@/app/(sistema)/imoveis/actions";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { CLASSE_BOTAO_PRIMARIO } from "@/components/form/estilos";
+import { Historico } from "@/components/Historico";
 import { formatarDecimalBr } from "@/lib/decimal";
 import { formatarDocumento } from "@/lib/documento";
 import { formatarCep, formatarDataHora } from "@/lib/formatacao";
@@ -91,6 +92,8 @@ export default async function DetalhesImovel({ params }: PageProps<"/imoveis/[id
         <Dado rotulo="Cadastrado em">{formatarDataHora(imovel.criadoEm)}</Dado>
         <Dado rotulo="Última alteração">{formatarDataHora(imovel.atualizadoEm)}</Dado>
       </dl>
+
+      <Historico entidade="Imovel" entidadeId={imovel.id} />
     </div>
   );
 }

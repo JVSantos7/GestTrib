@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { removerContribuinte } from "@/app/(sistema)/contribuintes/actions";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { CLASSE_BOTAO_PRIMARIO } from "@/components/form/estilos";
+import { Historico } from "@/components/Historico";
 import { formatarDocumento } from "@/lib/documento";
 import { formatarCep, formatarDataHora, formatarTelefone } from "@/lib/formatacao";
 import { formatarInscricao, ROTULOS_USO } from "@/lib/schemas/imovel";
@@ -121,6 +122,8 @@ export default async function DetalhesContribuinte({ params }: PageProps<"/contr
           </ul>
         )}
       </section>
+
+      <Historico entidade="Contribuinte" entidadeId={contribuinte.id} />
     </div>
   );
 }
