@@ -9,6 +9,8 @@ type ItemMenu = {
   href: string;
   // Módulos de fases futuras ficam visíveis, mas sem link, para não levar a 404.
   disponivel: boolean;
+  // Só aparece para quem pode gerenciar usuários (administrador).
+  somenteAdministrador?: boolean;
 };
 
 const ITENS: ItemMenu[] = [
@@ -18,6 +20,7 @@ const ITENS: ItemMenu[] = [
   { rotulo: "IPTU", href: "/iptu", disponivel: false },
   { rotulo: "Guias", href: "/guias", disponivel: false },
   { rotulo: "Relatórios", href: "/relatorios", disponivel: false },
+  { rotulo: "Usuários", href: "/usuarios", disponivel: true, somenteAdministrador: true },
 ];
 
 function estaAtivo(pathname: string, href: string) {
@@ -25,7 +28,7 @@ function estaAtivo(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function MenuLateral() {
+export function MenuLateral({ mostrarAdministracao }: { mostrarAdministracao: boolean }) {
   const pathname = usePathname();
   const [aberto, setAberto] = useState(false);
 
@@ -48,7 +51,7 @@ export function MenuLateral() {
         className={`${aberto ? "block" : "hidden"} px-2 pb-3 md:block md:py-4`}
       >
         <ul className="flex flex-col gap-1">
-          {ITENS.map((item) => {
+          {ITENS.filter((item) => !item.somenteAdministrador || mostrarAdministracao).map((item) => {
             if (!item.disponivel) {
               return (
                 <li key={item.href}>

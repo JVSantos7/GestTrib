@@ -29,3 +29,8 @@ Testes: Vitest (regras de cálculo)
 1 Contribuintes (CRUD) · 2 Busca/filtro/paginação · 3 Imóveis · 4 IPTU ·
 5 Guias e baixa · 6 Situação do contribuinte · 7 Login/perfis/auditoria ·
 8 Relatórios (PDF/CSV) · 9 Seeds, README e deploy
+
+Ordem de execução: 1, 2, 3, **7**, 4, 5, 6, 8, 9. A Fase 7 (login) foi antecipada
+para o sistema não crescer sem controle de acesso. Toda página nova chama
+`exigirPermissaoPagina` e toda Server Action chama `exigirPermissaoAcao`
+(`src/server/sessao.ts`); permissões por perfil ficam em `src/lib/permissoes.ts`.
