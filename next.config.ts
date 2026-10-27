@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
       { source: "/:caminho*", headers: SEGURANCA },
       { source: "/contribuintes/:caminho*", headers: SEM_CACHE },
       { source: "/imoveis/:caminho*", headers: SEM_CACHE },
+      { source: "/iptu/:caminho*", headers: SEM_CACHE },
+      { source: "/usuarios/:caminho*", headers: SEM_CACHE },
     ];
   },
 };

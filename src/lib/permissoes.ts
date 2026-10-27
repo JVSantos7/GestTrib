@@ -7,6 +7,7 @@ const recursos = {
   ...defaultStatements,
   contribuinte: ["ver", "criar", "editar", "excluir"],
   imovel: ["ver", "criar", "editar", "excluir"],
+  parametroIptu: ["ver", "editar"],
 } as const;
 
 export const ac = createAccessControl(recursos);
@@ -20,14 +21,17 @@ export const perfis = {
     session: ["list", "revoke"],
     contribuinte: ["ver", "criar", "editar", "excluir"],
     imovel: ["ver", "criar", "editar", "excluir"],
+    parametroIptu: ["ver", "editar"],
   }),
   operador: ac.newRole({
     contribuinte: ["ver", "criar", "editar", "excluir"],
     imovel: ["ver", "criar", "editar", "excluir"],
+    parametroIptu: ["ver"],
   }),
   consulta: ac.newRole({
     contribuinte: ["ver"],
     imovel: ["ver"],
+    parametroIptu: ["ver"],
   }),
 };
 

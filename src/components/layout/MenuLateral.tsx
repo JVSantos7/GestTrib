@@ -17,7 +17,8 @@ const ITENS: ItemMenu[] = [
   { rotulo: "Início", href: "/", disponivel: true },
   { rotulo: "Contribuintes", href: "/contribuintes", disponivel: true },
   { rotulo: "Imóveis", href: "/imoveis", disponivel: true },
-  { rotulo: "IPTU", href: "/iptu", disponivel: false },
+  // Por enquanto o IPTU tem só os parâmetros; o lançamento vem no próximo passo.
+  { rotulo: "IPTU", href: "/iptu/parametros", disponivel: true },
   { rotulo: "Guias", href: "/guias", disponivel: false },
   { rotulo: "Relatórios", href: "/relatorios", disponivel: false },
   { rotulo: "Usuários", href: "/usuarios", disponivel: true, somenteAdministrador: true },
