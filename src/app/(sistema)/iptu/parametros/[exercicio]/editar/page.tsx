@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { salvarParametros } from "@/app/(sistema)/iptu/parametros/actions";
 import { setoresDoFormulario, valoresDoFormulario } from "@/app/(sistema)/iptu/parametros/formulario";
 import { FormParametrosIptu } from "@/components/iptu/FormParametrosIptu";
-import { buscarParametros, listarSetoresComImoveis } from "@/server/services/parametros-iptu";
+import { buscarParametros, contarLancamentosVigentes, listarSetoresComImoveis } from "@/server/services/parametros-iptu";
 import { exigirPermissaoPagina } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Editar parâmetros do IPTU" };
@@ -13,6 +13,8 @@ export default async function EditarParametros({ params }: PageProps<"/iptu/para
   const { exercicio } = await params;
   const [parametros, comImoveis] = await Promise.all([buscarParametros(Number(exercicio)), listarSetoresComImoveis()]);
   if (!parametros) notFound();
+  // Com lançamentos vigentes não há o que editar; o detalhe explica o motivo.
+  if ((await contarLancamentosVigentes(parametros.exercicio)) > 0) redirect(`/iptu/parametros/${parametros.exercicio}`);
 
   const setores = setoresDoFormulario(comImoveis, parametros);
 

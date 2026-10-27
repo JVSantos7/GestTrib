@@ -7,6 +7,7 @@ import {
   atualizarParametros,
   criarParametros,
   ExercicioJaCadastradoError,
+  ParametrosEmUsoError,
   ParametrosNaoEncontradosError,
   SetorSemValorError,
 } from "@/server/services/parametros-iptu";
@@ -67,7 +68,11 @@ export async function salvarParametros(
     if (erro instanceof ExercicioJaCadastradoError) {
       return { mensagem: CORRIJA, erros: { exercicio: erro.message }, valores };
     }
-    if (erro instanceof SetorSemValorError || erro instanceof ParametrosNaoEncontradosError) {
+    if (
+      erro instanceof SetorSemValorError ||
+      erro instanceof ParametrosNaoEncontradosError ||
+      erro instanceof ParametrosEmUsoError
+    ) {
       return { mensagem: erro.message, valores };
     }
     throw erro;

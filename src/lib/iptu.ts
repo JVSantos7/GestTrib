@@ -53,6 +53,11 @@ function lerNaoNegativo(valor: string, nome: string) {
 
 const centavos = (valor: InstanceType<typeof Decimal>) => valor.toDecimalPlaces(2);
 
+/** A alíquota é cadastrada em percentual ("0.80" = 0,80%); o cálculo usa a fração ("0.008"). */
+export function percentualParaFracao(percentual: string): string {
+  return lerNaoNegativo(percentual, "Alíquota").dividedBy(100).toString();
+}
+
 /**
  * Valor venal = terreno (fração do lote × m² do setor) + construção (área × m² do uso).
  * IPTU = valor venal × alíquota do uso.

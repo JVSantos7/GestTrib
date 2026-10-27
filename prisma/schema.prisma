@@ -45,7 +45,8 @@ model Contribuinte {
   // Exclusão lógica: preenchido quando o contribuinte é excluído.
   excluidoEm   DateTime?  @map("excluido_em") @db.Timestamptz(3)
 
-  imoveis Imovel[]
+  imoveis         Imovel[]
+  lancamentosIptu LancamentoIptu[]
 
   @@index([nome])
   @@map("contribuintes")
@@ -73,6 +74,8 @@ model Imovel {
   // Exclusão lógica: preenchido quando o imóvel é excluído.
   excluidoEm     DateTime?    @map("excluido_em") @db.Timestamptz(3)
 
+  lancamentosIptu LancamentoIptu[]
+
   @@index([contribuinteId])
   @@index([logradouro])
   @@map("imoveis")
@@ -81,19 +84,19 @@ model Imovel {
 // Valores usados no cálculo do IPTU de um exercício (ano). Cada ano tem os seus,
 // para que mudar os valores de 2027 não altere o que foi lançado em 2026.
 model ParametroIptu {
-  id                  String           @id @default(uuid()) @db.Uuid
-  exercicio           Int              @unique @db.SmallInt
+  id                  String   @id @default(uuid()) @db.Uuid
+  exercicio           Int      @unique @db.SmallInt
   // Alíquotas em percentual (0,80 = 0,80% do valor venal), por uso do imóvel.
-  aliquotaResidencial Decimal          @map("aliquota_residencial") @db.Decimal(5, 2)
-  aliquotaComercial   Decimal          @map("aliquota_comercial") @db.Decimal(5, 2)
-  aliquotaIndustrial  Decimal          @map("aliquota_industrial") @db.Decimal(5, 2)
-  aliquotaTerreno     Decimal          @map("aliquota_terreno") @db.Decimal(5, 2)
+  aliquotaResidencial Decimal  @map("aliquota_residencial") @db.Decimal(5, 2)
+  aliquotaComercial   Decimal  @map("aliquota_comercial") @db.Decimal(5, 2)
+  aliquotaIndustrial  Decimal  @map("aliquota_industrial") @db.Decimal(5, 2)
+  aliquotaTerreno     Decimal  @map("aliquota_terreno") @db.Decimal(5, 2)
   // Valor do m² de construção, por uso (terreno sem construção não tem).
-  valorM2Residencial  Decimal          @map("valor_m2_residencial") @db.Decimal(12, 2)
-  valorM2Comercial    Decimal          @map("valor_m2_comercial") @db.Decimal(12, 2)
-  valorM2Industrial   Decimal          @map("valor_m2_industrial") @db.Decimal(12, 2)
-  criadoEm            DateTime         @default(now()) @map("criado_em") @db.Timestamptz(3)
-  atualizadoEm        DateTime         @updatedAt @map("atualizado_em") @db.Timestamptz(3)
+  valorM2Residencial  Decimal  @map("valor_m2_residencial") @db.Decimal(12, 2)
+  valorM2Comercial    Decimal  @map("valor_m2_comercial") @db.Decimal(12, 2)
+  valorM2Industrial   Decimal  @map("valor_m2_industrial") @db.Decimal(12, 2)
+  criadoEm            DateTime @default(now()) @map("criado_em") @db.Timestamptz(3)
+  atualizadoEm        DateTime @updatedAt @map("atualizado_em") @db.Timestamptz(3)
 
   valoresTerreno ValorM2Terreno[]
 
@@ -110,6 +113,46 @@ model ValorM2Terreno {
 
   @@unique([parametroId, setor])
   @@map("valores_m2_terreno")
+}
+
+// IPTU lançado para um imóvel em um exercício. Guarda uma "fotografia" de tudo o que entrou
+// no cálculo: se o imóvel ou os parâmetros mudarem depois, o imposto continua explicável.
+model LancamentoIptu {
+  id                     String       @id @default(uuid()) @db.Uuid
+  exercicio              Int          @db.SmallInt
+  imovelId               String       @map("imovel_id") @db.Uuid
+  imovel                 Imovel       @relation(fields: [imovelId], references: [id], onDelete: Restrict)
+  // Quem era o proprietário (o devedor) no momento do lançamento.
+  contribuinteId         String       @map("contribuinte_id") @db.Uuid
+  contribuinte           Contribuinte @relation(fields: [contribuinteId], references: [id], onDelete: Restrict)
+  // true enquanto o lançamento vale; vira nulo ao cancelar. Com a unique abaixo, o banco aceita
+  // um só lançamento vigente por imóvel e exercício (no PostgreSQL, um nulo nunca é igual a outro).
+  vigente                Boolean?     @default(true)
+  // Fotografia do imóvel.
+  uso                    UsoImovel
+  inscricao              String       @db.Char(12)
+  areaTerreno            Decimal      @map("area_terreno") @db.Decimal(12, 2)
+  areaConstruida         Decimal      @map("area_construida") @db.Decimal(12, 2)
+  unidadesNoLote         Int          @map("unidades_no_lote") @db.SmallInt
+  // Fotografia dos parâmetros (alíquota em percentual, como no cadastro).
+  valorM2Terreno         Decimal      @map("valor_m2_terreno") @db.Decimal(12, 2)
+  valorM2Construcao      Decimal      @map("valor_m2_construcao") @db.Decimal(12, 2)
+  aliquota               Decimal      @db.Decimal(5, 2)
+  // Memória de cálculo.
+  areaTerrenoConsiderada Decimal      @map("area_terreno_considerada") @db.Decimal(12, 2)
+  valorVenalTerreno      Decimal      @map("valor_venal_terreno") @db.Decimal(14, 2)
+  valorVenalConstrucao   Decimal      @map("valor_venal_construcao") @db.Decimal(14, 2)
+  valorVenal             Decimal      @map("valor_venal") @db.Decimal(14, 2)
+  valorImposto           Decimal      @map("valor_imposto") @db.Decimal(14, 2)
+  criadoEm               DateTime     @default(now()) @map("criado_em") @db.Timestamptz(3)
+  // Cancelamento: o lançamento não é apagado, fica registrado com o motivo.
+  canceladoEm            DateTime?    @map("cancelado_em") @db.Timestamptz(3)
+  motivoCancelamento     String?      @map("motivo_cancelamento") @db.VarChar(300)
+
+  @@unique([imovelId, exercicio, vigente])
+  @@index([exercicio])
+  @@index([contribuinteId])
+  @@map("lancamentos_iptu")
 }
 
 // ---------------------------------------------------------------------------

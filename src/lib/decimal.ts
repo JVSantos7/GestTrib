@@ -25,6 +25,11 @@ export function formatarDecimalBr(valor: { toFixed(casas: number): string } | st
   return `${comMilhar},${fracao.padEnd(2, "0").slice(0, 2)}`;
 }
 
+/** "1234.5" → "R$ 1.234,50". */
+export function formatarReais(valor: { toFixed(casas: number): string } | string): string {
+  return `R$ ${formatarDecimalBr(valor)}`;
+}
+
 /** Verdadeiro para "0", "0.00", "000.0" etc. */
 export function decimalEhZero(valor: string): boolean {
   return /^0+(\.0+)?$/.test(valor);

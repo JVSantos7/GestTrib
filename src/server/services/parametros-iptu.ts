@@ -21,6 +21,16 @@ export class ExercicioJaCadastradoError extends Error {
   }
 }
 
+export class ParametrosEmUsoError extends Error {
+  constructor(quantidade: number) {
+    super(
+      `Já ${quantidade === 1 ? "existe 1 lançamento vigente" : `existem ${quantidade} lançamentos vigentes`} neste exercício. ` +
+        "Mudar os valores agora deixaria lançamentos calculados com regras diferentes; cancele-os antes.",
+    );
+    this.name = "ParametrosEmUsoError";
+  }
+}
+
 export class SetorSemValorError extends Error {
   constructor(setores: string[]) {
     super(`Informe o valor do m² do terreno para ${setores.length === 1 ? "o setor" : "os setores"} ${setores.join(", ")}.`);
@@ -28,7 +38,12 @@ export class SetorSemValorError extends Error {
   }
 }
 
-const COM_TERRENOS = { valoresTerreno: { orderBy: { setor: "asc" } } } as const;
+/** Com lançamentos vigentes, os parâmetros do exercício ficam travados para edição. */
+export function contarLancamentosVigentes(exercicio: number, tx: Prisma.TransactionClient = prisma) {
+  return tx.lancamentoIptu.count({ where: { exercicio, vigente: true } });
+}
+
+const COM_TERRENOS ={ valoresTerreno: { orderBy: { setor: "asc" } } } as const;
 
 export function listarParametros() {
   return prisma.parametroIptu.findMany({ orderBy: { exercicio: "desc" } });
@@ -98,8 +113,12 @@ export async function criarParametros(dados: ParametrosIptuDados, responsavel: U
 export async function atualizarParametros(exercicio: number, dados: ParametrosIptuDados, responsavel: UsuarioLogado) {
   const { valores, valoresTerreno } = separar(dados);
   return prisma.$transaction(async (tx) => {
+    // Trava exclusiva: espera os lançamentos em andamento deste exercício terminarem antes de contar.
+    await tx.$queryRaw`SELECT id FROM parametros_iptu WHERE exercicio = ${exercicio} FOR UPDATE`;
     const existente = await tx.parametroIptu.findUnique({ where: { exercicio } });
     if (!existente) throw new ParametrosNaoEncontradosError();
+    const vigentes = await contarLancamentosVigentes(exercicio, tx);
+    if (vigentes > 0) throw new ParametrosEmUsoError(vigentes);
     await garantirTodosOsSetores(tx, dados);
 
     await tx.valorM2Terreno.deleteMany({ where: { parametroId: existente.id } });

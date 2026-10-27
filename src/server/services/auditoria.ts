@@ -20,16 +20,23 @@ type NovoRegistro = {
  * auditoria seja confirmada ou desfeita junto com a alteração que ela descreve.
  */
 export async function registrarAuditoria(tx: Prisma.TransactionClient, registro: NovoRegistro) {
-  await tx.registroAuditoria.create({
-    data: {
-      entidade: registro.entidade,
-      entidadeId: registro.entidadeId,
-      acao: registro.acao,
-      usuarioId: registro.responsavel.id,
-      // Converte datas em texto ISO; a coluna JSON não aceita Date.
-      dados: JSON.parse(JSON.stringify(registro.dados)) as Prisma.InputJsonValue,
-    },
-  });
+  await tx.registroAuditoria.create({ data: paraGravar(registro) });
+}
+
+/** Vários registros num só comando ao banco (ex.: lançamento do IPTU de todos os imóveis). */
+export async function registrarAuditorias(tx: Prisma.TransactionClient, registros: NovoRegistro[]) {
+  await tx.registroAuditoria.createMany({ data: registros.map(paraGravar) });
+}
+
+function paraGravar(registro: NovoRegistro) {
+  return {
+    entidade: registro.entidade,
+    entidadeId: registro.entidadeId,
+    acao: registro.acao,
+    usuarioId: registro.responsavel.id,
+    // Converte datas em texto ISO; a coluna JSON não aceita Date.
+    dados: JSON.parse(JSON.stringify(registro.dados)) as Prisma.InputJsonValue,
+  };
 }
 
 /**

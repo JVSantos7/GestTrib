@@ -12,16 +12,17 @@ function rotuloPerfil(valor: unknown): string {
 }
 
 /**
- * Resumo legível de uma alteração pontual de usuário, gravada como { campo, de?, para }
+ * Resumo legível de uma alteração pontual, gravada como { campo, de?, para, motivo? }
  * (ex.: "Perfil: Operador → Consulta"). Para os retratos completos de contribuinte e imóvel, null.
  */
 export function descreverDetalhe(dados: unknown): string | null {
   if (typeof dados !== "object" || dados === null) return null;
-  const { campo, de, para } = dados as Record<string, unknown>;
+  const { campo, de, para, motivo } = dados as Record<string, unknown>;
   switch (campo) {
     case "perfil":
       return `Perfil: ${rotuloPerfil(de)} → ${rotuloPerfil(para)}`;
     case "situacao":
+      if (para === "cancelado") return typeof motivo === "string" ? `Cancelamento: ${motivo}` : "Cancelamento";
       return para === "ativo" ? "Usuário reativado" : "Usuário desativado";
     case "senha":
       return "Senha redefinida";

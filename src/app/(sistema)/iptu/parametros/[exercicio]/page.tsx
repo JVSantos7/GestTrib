@@ -6,7 +6,7 @@ import { CLASSE_BOTAO_PRIMARIO } from "@/components/form/estilos";
 import { Historico } from "@/components/Historico";
 import { formatarDecimalBr } from "@/lib/decimal";
 import { formatarDataHora } from "@/lib/formatacao";
-import { buscarParametros, listarSetoresComImoveis } from "@/server/services/parametros-iptu";
+import { buscarParametros, contarLancamentosVigentes, listarSetoresComImoveis } from "@/server/services/parametros-iptu";
 import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Parâmetros do IPTU" };
@@ -31,6 +31,7 @@ export default async function DetalhesParametros({ params }: PageProps<"/iptu/pa
     pode({ parametroIptu: ["editar"] }),
   ]);
   if (!parametros) notFound();
+  const vigentes = await contarLancamentosVigentes(parametros.exercicio);
 
   const setores = setoresDoFormulario(comImoveis, parametros);
   const valorDoSetor = new Map(parametros.valoresTerreno.map((v) => [v.setor, v.valor]));
@@ -50,12 +51,20 @@ export default async function DetalhesParametros({ params }: PageProps<"/iptu/pa
             Última alteração em {formatarDataHora(parametros.atualizadoEm)}
           </p>
         </div>
-        {podeEditar && (
+        {podeEditar && vigentes === 0 && (
           <Link href={`/iptu/parametros/${parametros.exercicio}/editar`} className={CLASSE_BOTAO_PRIMARIO}>
             Editar
           </Link>
         )}
       </div>
+
+      {vigentes > 0 && (
+        <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          Este exercício tem {vigentes} {vigentes === 1 ? "lançamento vigente" : "lançamentos vigentes"}, calculados com estes
+          valores. Para não haver imposto do mesmo ano com regras diferentes, os parâmetros só podem ser alterados
+          depois que os lançamentos forem cancelados.
+        </p>
+      )}
 
       <section className="mt-6">
         <h2 className="text-lg font-semibold">Alíquotas</h2>

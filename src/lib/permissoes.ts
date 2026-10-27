@@ -8,6 +8,7 @@ const recursos = {
   contribuinte: ["ver", "criar", "editar", "excluir"],
   imovel: ["ver", "criar", "editar", "excluir"],
   parametroIptu: ["ver", "editar"],
+  iptu: ["ver", "lancar", "cancelar"],
 } as const;
 
 export const ac = createAccessControl(recursos);
@@ -22,16 +23,19 @@ export const perfis = {
     contribuinte: ["ver", "criar", "editar", "excluir"],
     imovel: ["ver", "criar", "editar", "excluir"],
     parametroIptu: ["ver", "editar"],
+    iptu: ["ver", "lancar", "cancelar"],
   }),
   operador: ac.newRole({
     contribuinte: ["ver", "criar", "editar", "excluir"],
     imovel: ["ver", "criar", "editar", "excluir"],
     parametroIptu: ["ver"],
+    iptu: ["ver", "lancar", "cancelar"],
   }),
   consulta: ac.newRole({
     contribuinte: ["ver"],
     imovel: ["ver"],
     parametroIptu: ["ver"],
+    iptu: ["ver"],
   }),
 };
 

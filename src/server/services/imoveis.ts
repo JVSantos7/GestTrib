@@ -25,6 +25,14 @@ export class InscricaoJaCadastradaError extends Error {
   }
 }
 
+export class ImovelPossuiLancamentosError extends Error {
+  constructor(quantidade: number) {
+    const lancamentos = quantidade === 1 ? "1 lançamento de IPTU vigente" : `${quantidade} lançamentos de IPTU vigentes`;
+    super(`Este imóvel tem ${lancamentos}. Cancele antes de excluir o imóvel.`);
+    this.name = "ImovelPossuiLancamentosError";
+  }
+}
+
 export class ProprietarioNaoEncontradoError extends Error {
   constructor() {
     super("Nenhum contribuinte ativo cadastrado com este CPF/CNPJ.");
@@ -158,6 +166,10 @@ export async function excluirImovel(id: string, responsavel: UsuarioLogado) {
   return prisma.$transaction(async (tx) => {
     const existente = await tx.imovel.findFirst({ where: { id, excluidoEm: null } });
     if (!existente) throw new ImovelNaoEncontradoError();
+
+    // Imposto vigente não pode ficar apontando para um imóvel excluído.
+    const lancamentos = await tx.lancamentoIptu.count({ where: { imovelId: id, vigente: true } });
+    if (lancamentos > 0) throw new ImovelPossuiLancamentosError(lancamentos);
 
     const imovel = await tx.imovel.update({ where: { id }, data: { excluidoEm: new Date() } });
     await registrarAuditoria(tx, {

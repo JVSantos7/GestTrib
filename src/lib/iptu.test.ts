@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { calcularIptu, ParametroInvalidoError, type ImovelCalculo, type ParametrosCalculo } from "./iptu";
+import {
+  calcularIptu,
+  ParametroInvalidoError,
+  percentualParaFracao,
+  type ImovelCalculo,
+  type ParametrosCalculo,
+} from "./iptu";
+
+describe("percentualParaFracao", () => {
+  it("divide por 100 sem perder precisão", () => {
+    expect(percentualParaFracao("0.80")).toBe("0.008");
+    expect(percentualParaFracao("1.25")).toBe("0.0125");
+    expect(percentualParaFracao("2")).toBe("0.02");
+  });
+});
 
 const casa: ImovelCalculo = { uso: "RESIDENCIAL", areaTerreno: "360.00", areaConstruida: "142.50", unidadesNoLote: 1 };
 const residencial: ParametrosCalculo = { valorM2Terreno: "150.00", valorM2Construcao: "1200.00", aliquota: "0.008" };

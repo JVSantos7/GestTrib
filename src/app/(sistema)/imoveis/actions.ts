@@ -9,6 +9,7 @@ import {
   criarImovel,
   excluirImovel,
   ImovelNaoEncontradoError,
+  ImovelPossuiLancamentosError,
   InscricaoJaCadastradaError,
   ProprietarioNaoEncontradoError,
 } from "@/server/services/imoveis";
@@ -81,6 +82,7 @@ export async function removerImovel(id: string): Promise<EstadoExclusao> {
     await excluirImovel(id, responsavel);
   } catch (erro) {
     if (erro instanceof AcessoNegadoError) return { erro: erro.message };
+    if (erro instanceof ImovelPossuiLancamentosError) return { erro: erro.message };
     // Já excluído por outra pessoa: o resultado desejado é o mesmo, voltar à listagem.
     if (!(erro instanceof ImovelNaoEncontradoError)) throw erro;
   }
