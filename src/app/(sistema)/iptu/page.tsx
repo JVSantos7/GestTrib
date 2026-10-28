@@ -5,11 +5,12 @@ import { lancarExercicioAcao } from "@/app/(sistema)/iptu/actions";
 import { CLASSE_CAMPO } from "@/components/form/estilos";
 import { FormLancarExercicio } from "@/components/iptu/FormulariosIptu";
 import { SituacaoLancamento } from "@/components/iptu/SituacaoLancamento";
+import { Prisma } from "@/generated/prisma/client";
 import { formatarReais } from "@/lib/decimal";
 import { mascararDocumento } from "@/lib/documento";
 import { lerFiltrosLancamentos, ROTULOS_SITUACAO, SITUACOES_LANCAMENTO, urlLancamentos } from "@/lib/schemas/filtros-lancamentos";
 import { formatarInscricao, ROTULOS_USO } from "@/lib/schemas/imovel";
-import { listarLancamentos } from "@/server/services/lancamentos-iptu";
+import { listarLancamentos, resumirExercicio } from "@/server/services/lancamentos-iptu";
 import { listarParametros } from "@/server/services/parametros-iptu";
 import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
@@ -20,8 +21,9 @@ const CLASSE_PAGINA = "rounded-md border border-zinc-300 px-3 py-1.5 text-sm fon
 export default async function Lancamentos({ searchParams }: PageProps<"/iptu">) {
   await exigirPermissaoPagina({ iptu: ["ver"] });
   const filtros = lerFiltrosLancamentos(await searchParams);
-  const [{ itens, paginacao, vigentes }, parametros, podeLancar, podeVerParametros] = await Promise.all([
+  const [{ itens, paginacao, vigentes }, resumo, parametros, podeLancar, podeVerParametros] = await Promise.all([
     listarLancamentos(filtros),
+    filtros.exercicio ? resumirExercicio(filtros.exercicio) : [],
     listarParametros(),
     pode({ iptu: ["lancar"] }),
     pode({ parametroIptu: ["ver"] }),
@@ -116,6 +118,48 @@ export default async function Lancamentos({ searchParams }: PageProps<"/iptu">) 
           </Link>
         )}
       </Form>
+
+      {resumo.length > 0 && (
+        <section className="mt-6" aria-labelledby="titulo-resumo">
+          <h2 id="titulo-resumo" className="text-base font-semibold">
+            Resumo de {filtros.exercicio} <span className="font-normal text-zinc-500">(lançamentos vigentes)</span>
+          </h2>
+          <div className="mt-3 overflow-x-auto rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+            <table className="w-full text-left text-sm tabular-nums">
+              <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-medium">Uso</th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium">Imóveis</th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium">Valor venal</th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium">IPTU</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
+                {resumo.map((grupo) => (
+                  <tr key={grupo.uso}>
+                    <td className="px-4 py-2.5">{ROTULOS_USO[grupo.uso]}</td>
+                    <td className="px-4 py-2.5 text-right">{grupo.quantidade}</td>
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">{formatarReais(grupo.valorVenal)}</td>
+                    <td className="px-4 py-2.5 text-right whitespace-nowrap">{formatarReais(grupo.valorImposto)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t border-zinc-200 font-semibold dark:border-zinc-800">
+                <tr>
+                  <th scope="row" className="px-4 py-2.5 text-left">Total</th>
+                  <td className="px-4 py-2.5 text-right">{resumo.reduce((total, g) => total + g.quantidade, 0)}</td>
+                  <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                    {formatarReais(resumo.reduce((total, g) => total.plus(g.valorVenal), new Prisma.Decimal(0)))}
+                  </td>
+                  <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                    {formatarReais(resumo.reduce((total, g) => total.plus(g.valorImposto), new Prisma.Decimal(0)))}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+      )}
 
       {itens.length === 0 ? (
         <p className="mt-6 rounded-md border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">

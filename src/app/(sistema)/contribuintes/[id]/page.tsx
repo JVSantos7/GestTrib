@@ -5,11 +5,15 @@ import { removerContribuinte } from "@/app/(sistema)/contribuintes/actions";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { CLASSE_BOTAO_PRIMARIO } from "@/components/form/estilos";
 import { Historico } from "@/components/Historico";
+import { SituacaoLancamento } from "@/components/iptu/SituacaoLancamento";
+import { Prisma } from "@/generated/prisma/client";
+import { formatarReais } from "@/lib/decimal";
 import { formatarDocumento } from "@/lib/documento";
 import { formatarCep, formatarDataHora, formatarTelefone } from "@/lib/formatacao";
 import { formatarInscricao, ROTULOS_USO } from "@/lib/schemas/imovel";
 import { buscarContribuinte } from "@/server/services/contribuintes";
 import { listarImoveisDoContribuinte } from "@/server/services/imoveis";
+import { listarLancamentosDoContribuinte } from "@/server/services/lancamentos-iptu";
 import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Contribuinte" };
@@ -25,16 +29,21 @@ function Dado({ rotulo, valor }: { rotulo: string; valor: string | null }) {
 
 export default async function DetalhesContribuinte({ params }: PageProps<"/contribuintes/[id]">) {
   await exigirPermissaoPagina({ contribuinte: ["ver"] });
-  const [podeEditar, podeExcluir, podeCriarImovel] = await Promise.all([
+  const [podeEditar, podeExcluir, podeCriarImovel, podeVerIptu] = await Promise.all([
     pode({ contribuinte: ["editar"] }),
     pode({ contribuinte: ["excluir"] }),
     pode({ imovel: ["criar"] }),
+    pode({ iptu: ["ver"] }),
   ]);
 
   const { id } = await params;
   const contribuinte = await buscarContribuinte(id);
   if (!contribuinte) notFound();
-  const imoveis = await listarImoveisDoContribuinte(contribuinte.id);
+  const [imoveis, lancamentos] = await Promise.all([
+    listarImoveisDoContribuinte(contribuinte.id),
+    podeVerIptu ? listarLancamentosDoContribuinte(contribuinte.id) : [],
+  ]);
+  const vigentes = lancamentos.filter((l) => l.vigente);
 
   const pessoaFisica = contribuinte.tipoPessoa === "FISICA";
   const endereco = [
@@ -122,6 +131,41 @@ export default async function DetalhesContribuinte({ params }: PageProps<"/contr
           </ul>
         )}
       </section>
+
+      {podeVerIptu && (
+        <section className="mt-8" aria-labelledby="titulo-iptu">
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 id="titulo-iptu" className="text-lg font-semibold">
+              IPTU
+            </h2>
+            {vigentes.length > 0 && (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Vigente:{" "}
+                <span className="font-semibold text-zinc-900 tabular-nums dark:text-zinc-100">
+                  {formatarReais(vigentes.reduce((total, l) => total.plus(l.valorImposto), new Prisma.Decimal(0)))}
+                </span>
+              </p>
+            )}
+          </div>
+          {lancamentos.length === 0 ? (
+            <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Nenhum IPTU lançado em nome deste contribuinte.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-zinc-100 rounded-md border border-zinc-200 bg-white dark:divide-zinc-900 dark:border-zinc-800 dark:bg-zinc-950">
+              {lancamentos.map((lancamento) => (
+                <li key={lancamento.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                  <Link href={`/iptu/${lancamento.id}`} className="font-medium tabular-nums text-emerald-700 hover:underline dark:text-emerald-400">
+                    IPTU {lancamento.exercicio} · {formatarInscricao(lancamento.inscricao)}
+                  </Link>
+                  <span className="flex items-center gap-3">
+                    <span className="tabular-nums">{formatarReais(lancamento.valorImposto)}</span>
+                    <SituacaoLancamento vigente={Boolean(lancamento.vigente)} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <Historico entidade="Contribuinte" entidadeId={contribuinte.id} />
     </div>

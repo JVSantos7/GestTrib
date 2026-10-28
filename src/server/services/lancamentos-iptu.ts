@@ -235,6 +235,32 @@ export async function buscarLancamento(id: string) {
   });
 }
 
+/** Lançamentos em que o contribuinte é o devedor (o proprietário na data do lançamento). */
+export function listarLancamentosDoContribuinte(contribuinteId: string) {
+  if (!ehUuid(contribuinteId)) return Promise.resolve([]);
+  return prisma.lancamentoIptu.findMany({
+    where: { contribuinteId },
+    orderBy: [{ exercicio: "desc" }, { inscricao: "asc" }, { criadoEm: "desc" }],
+  });
+}
+
+/** Quantidade e totais dos lançamentos vigentes de um exercício, por uso do imóvel (a soma é feita no banco). */
+export async function resumirExercicio(exercicio: number) {
+  const grupos = await prisma.lancamentoIptu.groupBy({
+    by: ["uso"],
+    where: { exercicio, vigente: true },
+    _count: true,
+    _sum: { valorVenal: true, valorImposto: true },
+    orderBy: { uso: "asc" },
+  });
+  return grupos.map((grupo) => ({
+    uso: grupo.uso,
+    quantidade: grupo._count,
+    valorVenal: grupo._sum.valorVenal ?? new Prisma.Decimal(0),
+    valorImposto: grupo._sum.valorImposto ?? new Prisma.Decimal(0),
+  }));
+}
+
 /** Lançamentos de um imóvel (vigentes e cancelados), para a página dele. */
 export function listarLancamentosDoImovel(imovelId: string) {
   if (!ehUuid(imovelId)) return Promise.resolve([]);
