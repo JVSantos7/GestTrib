@@ -3,6 +3,7 @@ import Form from "next/form";
 import Link from "next/link";
 import { mascararDocumento } from "@/lib/documento";
 import { lerFiltrosContribuintes, urlContribuintes } from "@/lib/schemas/filtros-contribuintes";
+import { ROTULOS_SITUACAO_FISCAL, SITUACOES_FISCAIS } from "@/lib/situacao-fiscal";
 import { listarContribuintes } from "@/server/services/contribuintes";
 import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
@@ -15,10 +16,12 @@ const CLASSE_PAGINA =
 
 export default async function Contribuintes({ searchParams }: PageProps<"/contribuintes">) {
   await exigirPermissaoPagina({ contribuinte: ["ver"] });
-  const podeCriar = await pode({ contribuinte: ["criar"] });
-  const filtros = lerFiltrosContribuintes(await searchParams);
+  const [podeCriar, podeVerGuias] = await Promise.all([pode({ contribuinte: ["criar"] }), pode({ guia: ["ver"] })]);
+  const lidos = lerFiltrosContribuintes(await searchParams);
+  // A situação fiscal sai das guias: sem permissão para vê-las, o filtro é ignorado (mesmo vindo na URL).
+  const filtros = podeVerGuias ? lidos : { ...lidos, situacao: undefined };
   const { itens, paginacao } = await listarContribuintes(filtros);
-  const filtrando = Boolean(filtros.busca || filtros.tipo);
+  const filtrando = Boolean(filtros.busca || filtros.tipo || filtros.situacao);
 
   return (
     <div className="max-w-5xl">
@@ -36,7 +39,7 @@ export default async function Contribuintes({ searchParams }: PageProps<"/contri
 
       <Form
         // A key recria os campos quando os filtros mudam por link (ex.: "Limpar").
-        key={`${filtros.busca}|${filtros.tipo ?? ""}`}
+        key={`${filtros.busca}|${filtros.tipo ?? ""}|${filtros.situacao ?? ""}`}
         action="/contribuintes"
         role="search"
         className="mt-6 flex flex-wrap items-end gap-3"
@@ -64,6 +67,21 @@ export default async function Contribuintes({ searchParams }: PageProps<"/contri
             <option value="JURIDICA">Jurídica</option>
           </select>
         </div>
+        {podeVerGuias && (
+          <div>
+            <label htmlFor="situacao" className="block text-sm font-medium">
+              Situação fiscal
+            </label>
+            <select id="situacao" name="situacao" defaultValue={filtros.situacao ?? ""} className={CLASSE_CAMPO}>
+              <option value="">Todas</option>
+              {SITUACOES_FISCAIS.map((situacao) => (
+                <option key={situacao} value={situacao}>
+                  {ROTULOS_SITUACAO_FISCAL[situacao]}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <button
           type="submit"
           className="rounded-md bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white"

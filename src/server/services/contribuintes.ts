@@ -4,9 +4,11 @@ import { limparDocumento } from "@/lib/documento";
 import { calcularPaginacao } from "@/lib/paginacao";
 import type { ContribuinteDados } from "@/lib/schemas/contribuinte";
 import { CONTRIBUINTES_POR_PAGINA } from "@/lib/schemas/filtros-contribuintes";
+import type { SituacaoFiscal } from "@/lib/situacao-fiscal";
 import { ehUuid } from "@/lib/uuid";
 import { prisma } from "@/server/db";
 import { registrarAuditoria } from "@/server/services/auditoria";
+import { filtroSituacaoFiscal } from "@/server/services/situacao-fiscal";
 import type { UsuarioLogado } from "@/server/sessao";
 
 const ENTIDADE = "Contribuinte";
@@ -46,15 +48,17 @@ function traduzirErro(erro: unknown): never {
 type OpcoesListagem = {
   busca?: string;
   tipo?: TipoPessoa;
+  situacao?: SituacaoFiscal;
   pagina?: number;
   porPagina?: number;
 };
 
 export async function listarContribuintes(opcoes: OpcoesListagem = {}) {
-  const { busca = "", tipo, pagina = 1, porPagina = CONTRIBUINTES_POR_PAGINA } = opcoes;
+  const { busca = "", tipo, situacao, pagina = 1, porPagina = CONTRIBUINTES_POR_PAGINA } = opcoes;
 
   const where: Prisma.ContribuinteWhereInput = { excluidoEm: null };
   if (tipo) where.tipoPessoa = tipo;
+  if (situacao) where.AND = [filtroSituacaoFiscal(situacao)];
   if (busca) {
     // O mesmo termo procura no nome e no documento (este, sem a pontuação digitada).
     const documento = limparDocumento(busca);
