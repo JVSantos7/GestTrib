@@ -179,9 +179,30 @@ model Guia {
   criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
   canceladaEm   DateTime?      @map("cancelada_em") @db.Timestamptz(3)
 
+  pagamentos Pagamento[]
+
   @@index([lancamentoId])
   @@index([situacao, vencimento])
   @@map("guias")
+}
+
+// Baixa de uma guia. Um estorno não apaga o pagamento: marca-o como estornado, com o motivo.
+model Pagamento {
+  id            String    @id @default(uuid()) @db.Uuid
+  guiaId        String    @map("guia_id") @db.Uuid
+  guia          Guia      @relation(fields: [guiaId], references: [id], onDelete: Restrict)
+  // Mesma técnica do lançamento: true enquanto vale, nulo depois do estorno.
+  // Com a unique abaixo, o banco aceita um só pagamento vigente por guia.
+  vigente       Boolean?  @default(true)
+  // Dia em que o contribuinte pagou (pode ser antes do dia em que a baixa foi registrada).
+  dataPagamento DateTime  @map("data_pagamento") @db.Date
+  valorPago     Decimal   @map("valor_pago") @db.Decimal(14, 2)
+  criadoEm      DateTime  @default(now()) @map("criado_em") @db.Timestamptz(3)
+  estornadoEm   DateTime? @map("estornado_em") @db.Timestamptz(3)
+  motivoEstorno String?   @map("motivo_estorno") @db.VarChar(300)
+
+  @@unique([guiaId, vigente])
+  @@map("pagamentos")
 }
 
 // ---------------------------------------------------------------------------

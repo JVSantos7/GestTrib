@@ -1,13 +1,14 @@
 import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { hojeIso } from "@/lib/datas";
+import { formatarReais } from "@/lib/decimal";
 import { limparDocumento } from "@/lib/documento";
 import { calcularPaginacao } from "@/lib/paginacao";
 import { planejarParcelas } from "@/lib/parcelas";
 import { GUIAS_POR_PAGINA, type SituacaoFiltroGuia } from "@/lib/schemas/filtros-guias";
 import { ehUuid } from "@/lib/uuid";
 import { prisma } from "@/server/db";
-import { registrarAuditorias } from "@/server/services/auditoria";
+import { registrarAuditoria, registrarAuditorias } from "@/server/services/auditoria";
 import type { UsuarioLogado } from "@/server/sessao";
 
 const ENTIDADE = "Guia";
@@ -66,6 +67,77 @@ export async function emitirGuias(lancamentoId: string, dados: DadosEmissao, res
     );
     return guias;
   });
+}
+
+export class GuiaNaoEncontradaError extends Error {
+  constructor() {
+    super("Guia não encontrada.");
+    this.name = "GuiaNaoEncontradaError";
+  }
+}
+
+export class GuiaNaoPagavelError extends Error {
+  constructor(situacao: "PAGA" | "CANCELADA") {
+    super(situacao === "PAGA" ? "Esta guia já está paga." : "Esta guia foi cancelada e não pode ser paga.");
+    this.name = "GuiaNaoPagavelError";
+  }
+}
+
+export class ValorDivergenteError extends Error {
+  constructor(pago: string, devido: string) {
+    super(`O valor pago (${formatarReais(pago)}) é diferente do valor da guia (${formatarReais(devido)}).`);
+    this.name = "ValorDivergenteError";
+  }
+}
+
+export class DataPagamentoInvalidaError extends Error {
+  constructor(mensagem: string) {
+    super(mensagem);
+    this.name = "DataPagamentoInvalidaError";
+  }
+}
+
+export type DadosPagamento = { dataPagamento: string; valorPago: string };
+
+/**
+ * Baixa: grava o pagamento e marca a guia como paga, na mesma transação.
+ * Sem multa e juros nesta fase, o valor pago precisa ser exatamente o da guia.
+ */
+export async function registrarPagamento(guiaId: string, dados: DadosPagamento, responsavel: UsuarioLogado) {
+  if (!ehUuid(guiaId)) throw new GuiaNaoEncontradaError();
+  if (dados.dataPagamento > hojeIso()) throw new DataPagamentoInvalidaError("A data do pagamento não pode estar no futuro.");
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      // Trava a guia: duas baixas simultâneas da mesma guia viram uma de cada vez.
+      await tx.$queryRaw`SELECT id FROM guias WHERE id = ${guiaId}::uuid FOR UPDATE`;
+      const guia = await tx.guia.findUnique({ where: { id: guiaId } });
+      if (!guia) throw new GuiaNaoEncontradaError();
+      if (guia.situacao !== "ABERTA") throw new GuiaNaoPagavelError(guia.situacao);
+      if (dados.dataPagamento < hojeIso(guia.criadoEm)) {
+        throw new DataPagamentoInvalidaError("A data do pagamento não pode ser anterior à emissão da guia.");
+      }
+      // Os dois lados são texto com 2 casas ("600.00"): comparar texto é comparar o valor exato.
+      if (dados.valorPago !== guia.valor.toFixed(2)) throw new ValorDivergenteError(dados.valorPago, guia.valor.toFixed(2));
+
+      const pagamento = await tx.pagamento.create({
+        data: { guiaId, dataPagamento: new Date(`${dados.dataPagamento}T00:00:00Z`), valorPago: dados.valorPago },
+      });
+      await tx.guia.update({ where: { id: guiaId }, data: { situacao: "PAGA" } });
+      await registrarAuditoria(tx, {
+        entidade: ENTIDADE,
+        entidadeId: guiaId,
+        acao: "ALTERACAO",
+        dados: { campo: "situacao", para: "paga", dataPagamento: dados.dataPagamento, valorPago: dados.valorPago },
+        responsavel,
+      });
+      return pagamento;
+    });
+  } catch (erro) {
+    // Rede de segurança: a unique (guia, vigente) barra um segundo pagamento vigente.
+    if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") throw new GuiaNaoPagavelError("PAGA");
+    throw erro;
+  }
 }
 
 type OpcoesListagem = {
@@ -154,6 +226,7 @@ export async function buscarGuia(id: string) {
           imovel: { select: { id: true, logradouro: true, numero: true, complemento: true, bairro: true, cep: true } },
         },
       },
+      pagamentos: { orderBy: { criadoEm: "desc" } },
     },
   });
 }

@@ -23,6 +23,8 @@ export function descreverDetalhe(dados: unknown): string | null {
       return `Perfil: ${rotuloPerfil(de)} → ${rotuloPerfil(para)}`;
     case "situacao":
       if (para === "cancelado") return typeof motivo === "string" ? `Cancelamento: ${motivo}` : "Cancelamento";
+      if (para === "paga") return "Baixa de pagamento";
+      if (para === "estornada") return typeof motivo === "string" ? `Estorno: ${motivo}` : "Estorno";
       return para === "ativo" ? "Usuário reativado" : "Usuário desativado";
     case "senha":
       return "Senha redefinida";

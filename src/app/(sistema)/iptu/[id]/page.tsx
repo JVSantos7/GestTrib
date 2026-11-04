@@ -8,6 +8,7 @@ import { SituacaoGuia } from "@/components/guias/SituacaoGuia";
 import { Historico } from "@/components/Historico";
 import { FormCancelarLancamento } from "@/components/iptu/FormulariosIptu";
 import { SituacaoLancamento } from "@/components/iptu/SituacaoLancamento";
+import { Prisma } from "@/generated/prisma/client";
 import { dataParaIso, formatarDataIso, hojeIso, sugerirVencimento } from "@/lib/datas";
 import { formatarDecimalBr, formatarReais } from "@/lib/decimal";
 import { formatarDocumento } from "@/lib/documento";
@@ -140,9 +141,22 @@ export default async function DetalhesLancamento({ params }: PageProps<"/iptu/[i
 
       {podeVerGuias && (
         <section className="mt-8" aria-labelledby="titulo-guias">
-          <h2 id="titulo-guias" className="text-lg font-semibold">
-            Guias
-          </h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-3">
+            <h2 id="titulo-guias" className="text-lg font-semibold">
+              Guias
+            </h2>
+            {temGuiaAtiva && (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Pago{" "}
+                <span className="font-semibold text-zinc-900 tabular-nums dark:text-zinc-100">
+                  {formatarReais(
+                    guias.filter((g) => g.situacao === "PAGA").reduce((total, g) => total.plus(g.valor), new Prisma.Decimal(0)),
+                  )}
+                </span>{" "}
+                de {formatarReais(lancamento.valorImposto)}
+              </p>
+            )}
+          </div>
           {lancamento.vigente && !temGuiaAtiva && podeEmitir && (
             <div className="mt-3 rounded-md border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
               <FormEmitirGuias

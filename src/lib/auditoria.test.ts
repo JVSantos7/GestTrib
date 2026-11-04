@@ -14,6 +14,13 @@ describe("descreverDetalhe", () => {
     expect(descreverDetalhe({ campo: "senha", para: "redefinida" })).toBe("Senha redefinida");
   });
 
+  it("descreve baixa e estorno de guia", () => {
+    expect(descreverDetalhe({ campo: "situacao", para: "paga", valorPago: "600.00" })).toBe("Baixa de pagamento");
+    expect(descreverDetalhe({ campo: "situacao", para: "estornada", motivo: "Valor de outra guia" })).toBe(
+      "Estorno: Valor de outra guia",
+    );
+  });
+
   it("descreve o cancelamento de lançamento com o motivo", () => {
     expect(descreverDetalhe({ campo: "situacao", para: "cancelado", motivo: "Área errada" })).toBe(
       "Cancelamento: Área errada",

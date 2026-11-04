@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { registrarPagamentoAcao } from "@/app/(sistema)/guias/actions";
 import { BotaoImprimir } from "@/components/BotaoImprimir";
+import { FormRegistrarPagamento } from "@/components/guias/FormRegistrarPagamento";
 import { SituacaoGuia } from "@/components/guias/SituacaoGuia";
 import { Historico } from "@/components/Historico";
 import { dataParaIso, formatarDataIso, hojeIso } from "@/lib/datas";
-import { formatarReais } from "@/lib/decimal";
+import { formatarDecimalBr, formatarReais } from "@/lib/decimal";
 import { formatarDocumento } from "@/lib/documento";
 import { formatarCep, formatarDataHora } from "@/lib/formatacao";
 import { formatarNumeroGuia, rotuloParcela, situacaoExibida } from "@/lib/guias";
 import { MUNICIPIO } from "@/lib/municipio";
 import { formatarInscricao } from "@/lib/schemas/imovel";
 import { buscarGuia } from "@/server/services/guias";
-import { exigirPermissaoPagina } from "@/server/sessao";
+import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Guia" };
 
@@ -28,13 +30,15 @@ function Dado({ rotulo, children, destaque }: { rotulo: string; children: React.
 export default async function DetalhesGuia({ params }: PageProps<"/guias/[id]">) {
   await exigirPermissaoPagina({ guia: ["ver"] });
   const { id } = await params;
-  const guia = await buscarGuia(id);
+  const [guia, podeBaixar] = await Promise.all([buscarGuia(id), pode({ guia: ["baixar"] })]);
   if (!guia) notFound();
 
   const { lancamento } = guia;
   const { contribuinte, imovel } = lancamento;
   const vencimento = dataParaIso(guia.vencimento);
-  const situacao = situacaoExibida(guia.situacao, vencimento, hojeIso());
+  const hoje = hojeIso();
+  const situacao = situacaoExibida(guia.situacao, vencimento, hoje);
+  const pagamento = guia.pagamentos.find((p) => p.vigente);
   const endereco = [`${imovel.logradouro}, ${imovel.numero}`, imovel.complemento, imovel.bairro].filter(Boolean).join(" · ");
 
   return (
@@ -96,12 +100,34 @@ export default async function DetalhesGuia({ params }: PageProps<"/guias/[id]">)
           </Dado>
         </dl>
 
+        {pagamento && (
+          <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 print:bg-white">
+            Pago em {formatarDataIso(dataParaIso(pagamento.dataPagamento))}: {formatarReais(pagamento.valorPago)}
+            {dataParaIso(pagamento.dataPagamento) > vencimento && " (após o vencimento)"}. Baixa registrada em{" "}
+            {formatarDataHora(pagamento.criadoEm)}.
+          </p>
+        )}
+
         <p className="mt-5 text-xs text-zinc-500">
           Emitida em {formatarDataHora(guia.criadoEm)}
           {guia.canceladaEm && ` · cancelada em ${formatarDataHora(guia.canceladaEm)}`}. Projeto de portfólio: sem código de
           barras e sem validade para pagamento.
         </p>
       </article>
+
+      {guia.situacao === "ABERTA" && podeBaixar && (
+        <section className="mt-8 rounded-md border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 print:hidden">
+          <h2 className="mb-1 text-base font-semibold">Registrar pagamento</h2>
+          <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
+            Informe o dia em que o contribuinte pagou e o valor recebido, que deve ser igual ao da guia.
+          </p>
+          <FormRegistrarPagamento
+            acao={registrarPagamentoAcao.bind(null, guia.id)}
+            hoje={hoje}
+            valor={formatarDecimalBr(guia.valor)}
+          />
+        </section>
+      )}
 
       <div className="print:hidden">
         <Historico entidade="Guia" entidadeId={guia.id} />
