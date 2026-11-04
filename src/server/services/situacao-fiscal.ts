@@ -1,6 +1,7 @@
 import "server-only";
+import type { Prisma } from "@/generated/prisma/client";
 import { dataParaIso, hojeIso } from "@/lib/datas";
-import { calcularSituacaoFiscal } from "@/lib/situacao-fiscal";
+import { calcularSituacaoFiscal, type SituacaoFiscal } from "@/lib/situacao-fiscal";
 import { ehUuid } from "@/lib/uuid";
 import { prisma } from "@/server/db";
 import { ATIVAS } from "@/server/services/guias";
@@ -50,3 +51,30 @@ export async function consultarSituacaoFiscal(contribuinteId: string) {
 }
 
 export type ConsultaSituacaoFiscal = Awaited<ReturnType<typeof consultarSituacaoFiscal>>;
+
+/**
+ * A mesma regra de `calcularSituacaoFiscal`, escrita como filtro do banco, para a listagem:
+ * filtrar na memória obrigaria a carregar todos os contribuintes antes de paginar.
+ * Se a regra mudar, as duas versões mudam juntas.
+ */
+export function filtroSituacaoFiscal(situacao: SituacaoFiscal, hoje: string = hojeIso()): Prisma.ContribuinteWhereInput {
+  // Um lançamento com débito vencido: alguma guia aberta cujo vencimento já passou.
+  const comVencido: Prisma.LancamentoIptuWhereInput = {
+    vigente: true,
+    guias: { some: { situacao: "ABERTA", vencimento: { lt: new Date(`${hoje}T00:00:00Z`) } } },
+  };
+  // Um lançamento com algo em aberto: guia aberta, ou nenhuma guia emitida ainda.
+  const emAberto: Prisma.LancamentoIptuWhereInput = {
+    vigente: true,
+    OR: [{ guias: { some: { situacao: "ABERTA" } } }, { guias: { none: ATIVAS } }],
+  };
+
+  switch (situacao) {
+    case "IRREGULAR":
+      return { lancamentosIptu: { some: comVencido } };
+    case "A_VENCER":
+      return { lancamentosIptu: { some: emAberto, none: comVencido } };
+    case "REGULAR":
+      return { lancamentosIptu: { none: emAberto } };
+  }
+}

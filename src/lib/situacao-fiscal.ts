@@ -7,7 +7,8 @@ const Decimal = DecimalBase.clone({ precision: 40 });
  * A situação é calculada na hora, nunca gravada: uma guia que vence hoje fica vencida amanhã
  * sem que nada mude no banco. Uma coluna "situação" ficaria errada toda meia-noite.
  */
-export type SituacaoFiscal = "REGULAR" | "A_VENCER" | "IRREGULAR";
+export const SITUACOES_FISCAIS = ["REGULAR", "A_VENCER", "IRREGULAR"] as const;
+export type SituacaoFiscal = (typeof SITUACOES_FISCAIS)[number];
 
 export const ROTULOS_SITUACAO_FISCAL: Record<SituacaoFiscal, string> = {
   REGULAR: "Regular",

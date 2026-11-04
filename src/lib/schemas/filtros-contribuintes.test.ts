@@ -3,21 +3,25 @@ import { lerFiltrosContribuintes, urlContribuintes } from "./filtros-contribuint
 
 describe("lerFiltrosContribuintes", () => {
   it("usa os padrões quando não há parâmetros", () => {
-    expect(lerFiltrosContribuintes({})).toEqual({ busca: "", tipo: undefined, pagina: 1 });
+    expect(lerFiltrosContribuintes({})).toEqual({ busca: "", tipo: undefined, situacao: undefined, pagina: 1 });
   });
 
-  it("lê busca, tipo e página", () => {
-    expect(lerFiltrosContribuintes({ busca: "  maria ", tipo: "JURIDICA", pagina: "3" })).toEqual({
+  it("lê busca, tipo, situação e página", () => {
+    expect(
+      lerFiltrosContribuintes({ busca: "  maria ", tipo: "JURIDICA", situacao: "IRREGULAR", pagina: "3" }),
+    ).toEqual({
       busca: "maria",
       tipo: "JURIDICA",
+      situacao: "IRREGULAR",
       pagina: 3,
     });
   });
 
   it("ignora valores inválidos em vez de falhar", () => {
-    expect(lerFiltrosContribuintes({ tipo: "OUTRO", pagina: "abc" })).toEqual({
+    expect(lerFiltrosContribuintes({ tipo: "OUTRO", situacao: "devedor", pagina: "abc" })).toEqual({
       busca: "",
       tipo: undefined,
+      situacao: undefined,
       pagina: 1,
     });
     expect(lerFiltrosContribuintes({ pagina: "0" }).pagina).toBe(1);
@@ -41,12 +45,12 @@ describe("lerFiltrosContribuintes", () => {
 describe("urlContribuintes", () => {
   it("omite filtros no padrão", () => {
     expect(urlContribuintes({})).toBe("/contribuintes");
-    expect(urlContribuintes({ busca: "", tipo: undefined, pagina: 1 })).toBe("/contribuintes");
+    expect(urlContribuintes({ busca: "", tipo: undefined, situacao: undefined, pagina: 1 })).toBe("/contribuintes");
   });
 
   it("inclui os filtros informados e codifica a busca", () => {
-    expect(urlContribuintes({ busca: "josé silva", tipo: "FISICA", pagina: 2 })).toBe(
-      "/contribuintes?busca=jos%C3%A9+silva&tipo=FISICA&pagina=2",
+    expect(urlContribuintes({ busca: "josé silva", tipo: "FISICA", situacao: "A_VENCER", pagina: 2 })).toBe(
+      "/contribuintes?busca=jos%C3%A9+silva&tipo=FISICA&situacao=A_VENCER&pagina=2",
     );
   });
 });

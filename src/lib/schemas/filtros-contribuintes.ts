@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TIPOS_PESSOA } from "@/lib/schemas/contribuinte";
+import { SITUACOES_FISCAIS } from "@/lib/situacao-fiscal";
 
 export const CONTRIBUINTES_POR_PAGINA = 10;
 
@@ -7,6 +8,7 @@ export const CONTRIBUINTES_POR_PAGINA = 10;
 const filtrosSchema = z.object({
   busca: z.string().trim().max(100).catch(""),
   tipo: z.enum(TIPOS_PESSOA).optional().catch(undefined),
+  situacao: z.enum(SITUACOES_FISCAIS).optional().catch(undefined),
   pagina: z.coerce.number().int().min(1).catch(1),
 });
 
@@ -22,6 +24,7 @@ export function lerFiltrosContribuintes(parametros: ParametrosUrl): FiltrosContr
   return filtrosSchema.parse({
     busca: primeiro(parametros.busca),
     tipo: primeiro(parametros.tipo),
+    situacao: primeiro(parametros.situacao),
     pagina: primeiro(parametros.pagina),
   });
 }
@@ -31,6 +34,7 @@ export function urlContribuintes(filtros: Partial<FiltrosContribuintes>): string
   const parametros = new URLSearchParams();
   if (filtros.busca) parametros.set("busca", filtros.busca);
   if (filtros.tipo) parametros.set("tipo", filtros.tipo);
+  if (filtros.situacao) parametros.set("situacao", filtros.situacao);
   if (filtros.pagina && filtros.pagina > 1) parametros.set("pagina", String(filtros.pagina));
 
   const consulta = parametros.toString();
