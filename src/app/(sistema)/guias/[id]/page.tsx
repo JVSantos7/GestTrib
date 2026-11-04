@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { registrarPagamentoAcao } from "@/app/(sistema)/guias/actions";
+import { estornarPagamentoAcao, registrarPagamentoAcao } from "@/app/(sistema)/guias/actions";
 import { BotaoImprimir } from "@/components/BotaoImprimir";
+import { FormMotivo } from "@/components/form/FormMotivo";
 import { FormRegistrarPagamento } from "@/components/guias/FormRegistrarPagamento";
 import { SituacaoGuia } from "@/components/guias/SituacaoGuia";
 import { Historico } from "@/components/Historico";
@@ -30,7 +31,11 @@ function Dado({ rotulo, children, destaque }: { rotulo: string; children: React.
 export default async function DetalhesGuia({ params }: PageProps<"/guias/[id]">) {
   await exigirPermissaoPagina({ guia: ["ver"] });
   const { id } = await params;
-  const [guia, podeBaixar] = await Promise.all([buscarGuia(id), pode({ guia: ["baixar"] })]);
+  const [guia, podeBaixar, podeEstornar] = await Promise.all([
+    buscarGuia(id),
+    pode({ guia: ["baixar"] }),
+    pode({ guia: ["estornar"] }),
+  ]);
   if (!guia) notFound();
 
   const { lancamento } = guia;
@@ -39,6 +44,7 @@ export default async function DetalhesGuia({ params }: PageProps<"/guias/[id]">)
   const hoje = hojeIso();
   const situacao = situacaoExibida(guia.situacao, vencimento, hoje);
   const pagamento = guia.pagamentos.find((p) => p.vigente);
+  const estornados = guia.pagamentos.filter((p) => !p.vigente);
   const endereco = [`${imovel.logradouro}, ${imovel.numero}`, imovel.complemento, imovel.bairro].filter(Boolean).join(" · ");
 
   return (
@@ -126,6 +132,42 @@ export default async function DetalhesGuia({ params }: PageProps<"/guias/[id]">)
             hoje={hoje}
             valor={formatarDecimalBr(guia.valor)}
           />
+        </section>
+      )}
+
+      {pagamento && podeEstornar && (
+        <section className="mt-8 rounded-md border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950 print:hidden">
+          <h2 className="mb-1 text-base font-semibold">Estornar pagamento</h2>
+          <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
+            Use só para desfazer uma baixa registrada por engano. O pagamento continua registrado como estornado, com o
+            motivo, e a guia volta a ficar em aberto.
+          </p>
+          <FormMotivo
+            acao={estornarPagamentoAcao.bind(null, guia.id)}
+            rotulo="Estornar pagamento"
+            rotuloPendente="Estornando…"
+            confirmacao="Estornar este pagamento? A guia voltará a ficar em aberto."
+            placeholder="Ex.: baixa lançada na guia errada; o pagamento era da parcela seguinte."
+          />
+        </section>
+      )}
+
+      {estornados.length > 0 && (
+        <section className="mt-8 print:hidden" aria-labelledby="titulo-estornos">
+          <h2 id="titulo-estornos" className="text-lg font-semibold">
+            Pagamentos estornados
+          </h2>
+          <ul className="mt-3 divide-y divide-zinc-100 rounded-md border border-zinc-200 bg-white text-sm dark:divide-zinc-900 dark:border-zinc-800 dark:bg-zinc-950">
+            {estornados.map((p) => (
+              <li key={p.id} className="px-4 py-3">
+                <p className="tabular-nums">
+                  {formatarReais(p.valorPago)} pago em {formatarDataIso(dataParaIso(p.dataPagamento))}
+                  {p.estornadoEm && <span className="text-zinc-500"> · estornado em {formatarDataHora(p.estornadoEm)}</span>}
+                </p>
+                <p className="mt-0.5 text-zinc-600 dark:text-zinc-400">Motivo: {p.motivoEstorno}</p>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

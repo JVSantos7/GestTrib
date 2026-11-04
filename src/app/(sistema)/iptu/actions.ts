@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { EstadoAcao } from "@/components/form/FormAcao";
+import { motivoSchema } from "@/lib/schemas/motivo";
 import {
   cancelarLancamento,
   lancarExercicio,
@@ -21,13 +22,7 @@ const exercicioSchema = z.object({
   exercicio: z.coerce.number({ error: "Selecione o exercício." }).int().min(2000).max(2100),
 });
 
-const cancelamentoSchema = z.object({
-  motivo: z
-    .string({ error: "Informe o motivo do cancelamento." })
-    .trim()
-    .min(10, { error: "Descreva o motivo com pelo menos 10 caracteres." })
-    .max(300, { error: "Use no máximo 300 caracteres." }),
-});
+const cancelamentoSchema = motivoSchema("cancelamento");
 
 // Erros de regra de negócio que viram mensagem na tela; o resto é falha inesperada.
 const ERROS_CONHECIDOS = [

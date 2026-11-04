@@ -5,10 +5,13 @@ import { z } from "zod";
 import type { EstadoAcao } from "@/components/form/FormAcao";
 import { lerDecimalBr } from "@/lib/decimal";
 import { MAXIMO_PARCELAS, ParcelamentoInvalidoError } from "@/lib/parcelas";
+import { motivoSchema } from "@/lib/schemas/motivo";
 import {
   DataPagamentoInvalidaError,
   emitirGuias,
+  estornarPagamento,
   GuiaNaoEncontradaError,
+  GuiaNaoPagaError,
   GuiaNaoPagavelError,
   GuiasJaEmitidasError,
   LancamentoNaoVigenteError,
@@ -53,6 +56,7 @@ const ERROS_CONHECIDOS = [
   GuiaNaoPagavelError,
   ValorDivergenteError,
   DataPagamentoInvalidaError,
+  GuiaNaoPagaError,
 ];
 
 function errosDeCampo(erro: z.ZodError): EstadoAcao {
@@ -71,6 +75,28 @@ export async function registrarPagamentoAcao(guiaId: string, _estado: EstadoAcao
     revalidatePath("/guias", "layout");
     revalidatePath("/iptu/[id]", "page");
     return { sucesso: "Pagamento registrado." };
+  } catch (erro) {
+    if (ERROS_CONHECIDOS.some((tipo) => erro instanceof tipo)) return { erro: (erro as Error).message };
+    throw erro;
+  }
+}
+
+const estornoSchema = motivoSchema("estorno");
+
+export async function estornarPagamentoAcao(guiaId: string, _estado: EstadoAcao, formData: FormData): Promise<EstadoAcao> {
+  try {
+    const responsavel = await exigirPermissaoAcao({ guia: ["estornar"] });
+    const resultado = estornoSchema.safeParse(Object.fromEntries(formData));
+    if (!resultado.success) {
+      const mensagem = resultado.error.issues[0].message;
+      return { erro: mensagem, erros: { motivo: mensagem } };
+    }
+
+    await estornarPagamento(guiaId, resultado.data.motivo, responsavel);
+    revalidatePath("/guias", "layout");
+    revalidatePath("/iptu/[id]", "page");
+    // A página volta com a guia aberta e o estorno listado; o formulário de estorno deixa de aparecer.
+    return {};
   } catch (erro) {
     if (ERROS_CONHECIDOS.some((tipo) => erro instanceof tipo)) return { erro: (erro as Error).message };
     throw erro;

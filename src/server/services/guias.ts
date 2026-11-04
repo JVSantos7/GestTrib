@@ -140,6 +140,48 @@ export async function registrarPagamento(guiaId: string, dados: DadosPagamento, 
   }
 }
 
+export class GuiaNaoPagaError extends Error {
+  constructor() {
+    super("Só é possível estornar o pagamento de uma guia paga.");
+    this.name = "GuiaNaoPagaError";
+  }
+}
+
+/**
+ * Desfaz uma baixa registrada por engano. Nada é apagado: o pagamento fica marcado como estornado,
+ * com data e motivo, e a guia volta a ficar aberta (ou vencida, se a data já passou).
+ */
+export async function estornarPagamento(guiaId: string, motivo: string, responsavel: UsuarioLogado) {
+  if (!ehUuid(guiaId)) throw new GuiaNaoEncontradaError();
+  return prisma.$transaction(async (tx) => {
+    // Mesma trava da baixa: estorno e nova baixa da mesma guia não se cruzam.
+    await tx.$queryRaw`SELECT id FROM guias WHERE id = ${guiaId}::uuid FOR UPDATE`;
+    const guia = await tx.guia.findUnique({ where: { id: guiaId } });
+    if (!guia) throw new GuiaNaoEncontradaError();
+    const pagamento = await tx.pagamento.findFirst({ where: { guiaId, vigente: true } });
+    if (guia.situacao !== "PAGA" || !pagamento) throw new GuiaNaoPagaError();
+
+    await tx.pagamento.update({
+      where: { id: pagamento.id },
+      data: { vigente: null, estornadoEm: new Date(), motivoEstorno: motivo },
+    });
+    await tx.guia.update({ where: { id: guiaId }, data: { situacao: "ABERTA" } });
+    await registrarAuditoria(tx, {
+      entidade: ENTIDADE,
+      entidadeId: guiaId,
+      acao: "ALTERACAO",
+      dados: {
+        campo: "situacao",
+        para: "estornada",
+        motivo,
+        dataPagamento: pagamento.dataPagamento,
+        valorPago: pagamento.valorPago,
+      },
+      responsavel,
+    });
+  });
+}
+
 type OpcoesListagem = {
   busca?: string;
   situacao?: SituacaoFiltroGuia;
