@@ -149,10 +149,39 @@ model LancamentoIptu {
   canceladoEm            DateTime?    @map("cancelado_em") @db.Timestamptz(3)
   motivoCancelamento     String?      @map("motivo_cancelamento") @db.VarChar(300)
 
+  guias Guia[]
+
   @@unique([imovelId, exercicio, vigente])
   @@index([exercicio])
   @@index([contribuinteId])
   @@map("lancamentos_iptu")
+}
+
+enum SituacaoGuia {
+  ABERTA
+  PAGA
+  CANCELADA
+}
+
+// Guia de pagamento de um lançamento: cota única (parcela 1 de 1) ou uma das parcelas.
+model Guia {
+  id            String         @id @default(uuid()) @db.Uuid
+  // Número da guia, sequencial e único, gerado pelo banco (não repete nem com emissões simultâneas).
+  numero        Int            @unique @default(autoincrement())
+  lancamentoId  String         @map("lancamento_id") @db.Uuid
+  lancamento    LancamentoIptu @relation(fields: [lancamentoId], references: [id], onDelete: Restrict)
+  parcela       Int            @db.SmallInt
+  totalParcelas Int            @map("total_parcelas") @db.SmallInt
+  valor         Decimal        @db.Decimal(14, 2)
+  // Só a data: vencimento não tem hora nem fuso.
+  vencimento    DateTime       @db.Date
+  situacao      SituacaoGuia   @default(ABERTA)
+  criadoEm      DateTime       @default(now()) @map("criado_em") @db.Timestamptz(3)
+  canceladaEm   DateTime?      @map("cancelada_em") @db.Timestamptz(3)
+
+  @@index([lancamentoId])
+  @@index([situacao, vencimento])
+  @@map("guias")
 }
 
 // ---------------------------------------------------------------------------

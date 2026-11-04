@@ -8,6 +8,7 @@ import {
   cancelarLancamento,
   lancarExercicio,
   lancarImovel,
+  LancamentoComPagamentoError,
   LancamentoJaCanceladoError,
   LancamentoJaExisteError,
   LancamentoNaoEncontradoError,
@@ -37,6 +38,7 @@ const ERROS_CONHECIDOS = [
   LancamentoJaExisteError,
   LancamentoNaoEncontradoError,
   LancamentoJaCanceladoError,
+  LancamentoComPagamentoError,
 ];
 
 /** Confere a permissão, roda a operação e traduz os erros conhecidos em mensagem para a tela. */

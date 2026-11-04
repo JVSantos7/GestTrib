@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { emitirGuiasAcao } from "@/app/(sistema)/guias/actions";
 import { cancelarLancamentoAcao } from "@/app/(sistema)/iptu/actions";
+import { FormEmitirGuias } from "@/components/guias/FormEmitirGuias";
+import { SituacaoGuia } from "@/components/guias/SituacaoGuia";
 import { Historico } from "@/components/Historico";
 import { FormCancelarLancamento } from "@/components/iptu/FormulariosIptu";
 import { SituacaoLancamento } from "@/components/iptu/SituacaoLancamento";
+import { dataParaIso, formatarDataIso, hojeIso, sugerirVencimento } from "@/lib/datas";
 import { formatarDecimalBr, formatarReais } from "@/lib/decimal";
 import { formatarDocumento } from "@/lib/documento";
 import { formatarDataHora } from "@/lib/formatacao";
+import { formatarNumeroGuia, rotuloParcela, situacaoExibida } from "@/lib/guias";
 import { formatarInscricao, ROTULOS_USO } from "@/lib/schemas/imovel";
+import { listarGuiasDoLancamento } from "@/server/services/guias";
 import { buscarLancamento } from "@/server/services/lancamentos-iptu";
 import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
@@ -30,8 +36,17 @@ function Linha({ rotulo, conta, valor, destaque }: { rotulo: string; conta?: str
 export default async function DetalhesLancamento({ params }: PageProps<"/iptu/[id]">) {
   await exigirPermissaoPagina({ iptu: ["ver"] });
   const { id } = await params;
-  const [lancamento, podeCancelar] = await Promise.all([buscarLancamento(id), pode({ iptu: ["cancelar"] })]);
+  const [lancamento, guias, podeCancelar, podeVerGuias, podeEmitir] = await Promise.all([
+    buscarLancamento(id),
+    listarGuiasDoLancamento(id),
+    pode({ iptu: ["cancelar"] }),
+    pode({ guia: ["ver"] }),
+    pode({ guia: ["emitir"] }),
+  ]);
   if (!lancamento) notFound();
+  const hoje = hojeIso();
+  const temGuiaAtiva = guias.some((g) => g.situacao !== "CANCELADA");
+  const temGuiaPaga = guias.some((g) => g.situacao === "PAGA");
 
   const m2 = (valor: { toFixed(casas: number): string }) => `${formatarDecimalBr(valor)} m²`;
   const fracao =
@@ -123,12 +138,63 @@ export default async function DetalhesLancamento({ params }: PageProps<"/iptu/[i
         </div>
       </section>
 
-      {lancamento.vigente && podeCancelar && (
+      {podeVerGuias && (
+        <section className="mt-8" aria-labelledby="titulo-guias">
+          <h2 id="titulo-guias" className="text-lg font-semibold">
+            Guias
+          </h2>
+          {lancamento.vigente && !temGuiaAtiva && podeEmitir && (
+            <div className="mt-3 rounded-md border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+              <FormEmitirGuias
+                acao={emitirGuiasAcao.bind(null, lancamento.id)}
+                total={lancamento.valorImposto.toFixed(2)}
+                hoje={hoje}
+                vencimentoSugerido={sugerirVencimento(hoje)}
+              />
+            </div>
+          )}
+          {guias.length === 0 ? (
+            <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Nenhuma guia emitida.</p>
+          ) : (
+            <div className="mt-3 overflow-x-auto rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+              <table className="w-full text-left text-sm tabular-nums">
+                <thead className="border-b border-zinc-200 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
+                  <tr>
+                    <th scope="col" className="px-4 py-3 font-medium">Guia</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Parcela</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Vencimento</th>
+                    <th scope="col" className="px-4 py-3 text-right font-medium">Valor</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Situação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-900">
+                  {guias.map((guia) => {
+                    const vencimento = dataParaIso(guia.vencimento);
+                    return (
+                      <tr key={guia.id}>
+                        <td className="px-4 py-2.5 font-medium">{formatarNumeroGuia(guia.numero)}</td>
+                        <td className="px-4 py-2.5">{rotuloParcela(guia.parcela, guia.totalParcelas)}</td>
+                        <td className="px-4 py-2.5">{formatarDataIso(vencimento)}</td>
+                        <td className="px-4 py-2.5 text-right whitespace-nowrap">{formatarReais(guia.valor)}</td>
+                        <td className="px-4 py-2.5">
+                          <SituacaoGuia situacao={situacaoExibida(guia.situacao, vencimento, hoje)} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {lancamento.vigente && podeCancelar && !temGuiaPaga && (
         <section className="mt-8 rounded-md border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
           <h2 className="mb-1 text-base font-semibold">Cancelar lançamento</h2>
           <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
             Use quando o lançamento foi feito com dados errados. Ele fica registrado como cancelado, com o motivo, e o
-            imóvel pode ser lançado de novo.
+            imóvel pode ser lançado de novo.{temGuiaAtiva && " As guias em aberto são canceladas junto."}
           </p>
           <FormCancelarLancamento acao={cancelarLancamentoAcao.bind(null, lancamento.id)} />
         </section>

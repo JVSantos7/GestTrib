@@ -34,6 +34,13 @@ export class LancamentoJaCanceladoError extends Error {
   }
 }
 
+export class LancamentoComPagamentoError extends Error {
+  constructor() {
+    super("Este lançamento tem guia paga e não pode ser cancelado. Estorne o pagamento antes, se ele foi registrado por engano.");
+    this.name = "LancamentoComPagamentoError";
+  }
+}
+
 type ParametrosComTerrenos = Prisma.ParametroIptuGetPayload<{ include: { valoresTerreno: true } }>;
 
 async function exigirParametros(tx: Prisma.TransactionClient, exercicio: number) {
@@ -160,19 +167,25 @@ export async function lancarExercicio(exercicio: number, responsavel: UsuarioLog
 export async function cancelarLancamento(id: string, motivo: string, responsavel: UsuarioLogado) {
   if (!ehUuid(id)) throw new LancamentoNaoEncontradoError();
   return prisma.$transaction(async (tx) => {
+    // Mesma trava da emissão de guias: não dá para cancelar enquanto guias estão sendo emitidas.
+    await tx.$queryRaw`SELECT id FROM lancamentos_iptu WHERE id = ${id}::uuid FOR UPDATE`;
     const existente = await tx.lancamentoIptu.findUnique({ where: { id } });
     if (!existente) throw new LancamentoNaoEncontradoError();
     if (!existente.vigente) throw new LancamentoJaCanceladoError();
+    if (await tx.guia.count({ where: { lancamentoId: id, situacao: "PAGA" } })) throw new LancamentoComPagamentoError();
 
+    const agora = new Date();
     const lancamento = await tx.lancamentoIptu.update({
       where: { id },
-      data: { vigente: null, canceladoEm: new Date(), motivoCancelamento: motivo },
+      data: { vigente: null, canceladoEm: agora, motivoCancelamento: motivo },
     });
+    // As guias abertas deixam de valer junto com o imposto que cobravam.
+    const guias = await tx.guia.updateMany({ where: { lancamentoId: id, situacao: "ABERTA" }, data: { situacao: "CANCELADA", canceladaEm: agora } });
     await registrarAuditoria(tx, {
       entidade: ENTIDADE,
       entidadeId: id,
       acao: "ALTERACAO",
-      dados: { campo: "situacao", para: "cancelado", motivo },
+      dados: { campo: "situacao", para: "cancelado", motivo, guiasCanceladas: guias.count },
       responsavel,
     });
     return lancamento;
