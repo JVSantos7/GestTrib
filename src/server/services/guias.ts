@@ -37,7 +37,8 @@ export class VencimentoNoPassadoError extends Error {
 export type DadosEmissao = { quantidade: number; primeiroVencimento: string };
 
 /** Guias que ainda contam: abertas ou pagas. Canceladas ficam só no histórico. */
-const ATIVAS = { situacao: { in: ["ABERTA", "PAGA"] } } satisfies Prisma.GuiaWhereInput;
+/** Guias que contam como emitidas para o lançamento (a cancelada não conta: dá para emitir de novo). */
+export const ATIVAS = { situacao: { in: ["ABERTA", "PAGA"] } } satisfies Prisma.GuiaWhereInput;
 
 export async function emitirGuias(lancamentoId: string, dados: DadosEmissao, responsavel: UsuarioLogado) {
   if (!ehUuid(lancamentoId)) throw new LancamentoNaoVigenteError();

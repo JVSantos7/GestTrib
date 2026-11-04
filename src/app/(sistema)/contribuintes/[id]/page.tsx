@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { removerContribuinte } from "@/app/(sistema)/contribuintes/actions";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
+import { SituacaoFiscal } from "@/components/contribuintes/SituacaoFiscal";
 import { CLASSE_BOTAO_PRIMARIO } from "@/components/form/estilos";
 import { Historico } from "@/components/Historico";
 import { SituacaoLancamento } from "@/components/iptu/SituacaoLancamento";
@@ -14,6 +15,7 @@ import { formatarInscricao, ROTULOS_USO } from "@/lib/schemas/imovel";
 import { buscarContribuinte } from "@/server/services/contribuintes";
 import { listarImoveisDoContribuinte } from "@/server/services/imoveis";
 import { listarLancamentosDoContribuinte } from "@/server/services/lancamentos-iptu";
+import { consultarSituacaoFiscal } from "@/server/services/situacao-fiscal";
 import { exigirPermissaoPagina, pode } from "@/server/sessao";
 
 export const metadata: Metadata = { title: "Contribuinte" };
@@ -29,19 +31,21 @@ function Dado({ rotulo, valor }: { rotulo: string; valor: string | null }) {
 
 export default async function DetalhesContribuinte({ params }: PageProps<"/contribuintes/[id]">) {
   await exigirPermissaoPagina({ contribuinte: ["ver"] });
-  const [podeEditar, podeExcluir, podeCriarImovel, podeVerIptu] = await Promise.all([
+  const [podeEditar, podeExcluir, podeCriarImovel, podeVerIptu, podeVerGuias] = await Promise.all([
     pode({ contribuinte: ["editar"] }),
     pode({ contribuinte: ["excluir"] }),
     pode({ imovel: ["criar"] }),
     pode({ iptu: ["ver"] }),
+    pode({ guia: ["ver"] }),
   ]);
 
   const { id } = await params;
   const contribuinte = await buscarContribuinte(id);
   if (!contribuinte) notFound();
-  const [imoveis, lancamentos] = await Promise.all([
+  const [imoveis, lancamentos, situacaoFiscal] = await Promise.all([
     listarImoveisDoContribuinte(contribuinte.id),
     podeVerIptu ? listarLancamentosDoContribuinte(contribuinte.id) : [],
+    podeVerGuias ? consultarSituacaoFiscal(contribuinte.id) : null,
   ]);
   const vigentes = lancamentos.filter((l) => l.vigente);
 
@@ -93,6 +97,8 @@ export default async function DetalhesContribuinte({ params }: PageProps<"/contr
         <Dado rotulo="Cadastrado em" valor={formatarDataHora(contribuinte.criadoEm)} />
         <Dado rotulo="Última alteração" valor={formatarDataHora(contribuinte.atualizadoEm)} />
       </dl>
+
+      {situacaoFiscal && <SituacaoFiscal consulta={situacaoFiscal} />}
 
       <section className="mt-8" aria-labelledby="titulo-imoveis">
         <div className="flex flex-wrap items-center justify-between gap-3">
