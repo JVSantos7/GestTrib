@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FormLogin } from "@/components/FormLogin";
 import { MUNICIPIO } from "@/lib/municipio";
@@ -24,6 +25,11 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
         <FormLogin destino={destino} />
         <p className="mt-6 text-xs text-zinc-500">
           Sistema de demonstração com dados fictícios. O acesso é criado pelo administrador.
+        </p>
+        <p className="mt-2 text-xs">
+          <Link href="/validar-certidao" className="text-emerald-700 hover:underline dark:text-emerald-400">
+            Validar uma certidão
+          </Link>
         </p>
       </div>
     </main>

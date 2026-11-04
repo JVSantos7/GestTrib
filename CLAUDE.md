@@ -80,3 +80,5 @@ Ordem de execução: 1, 2, 3, **7**, 4, 5, 6, 8, 9. A Fase 7 (login) foi antecip
 para o sistema não crescer sem controle de acesso. Toda página nova chama
 `exigirPermissaoPagina` e toda Server Action chama `exigirPermissaoAcao`
 (`src/server/sessao.ts`); permissões por perfil ficam em `src/lib/permissoes.ts`.
+Única exceção: `/validar-certidao` é pública de propósito (liberada no matcher de
+`src/proxy.ts`) e só expõe o mínimo para conferir a autenticidade de uma certidão.

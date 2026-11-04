@@ -1,4 +1,11 @@
-import type { SituacaoFiscal } from "@/lib/situacao-fiscal";
+import type { ResumoSituacaoFiscal, SituacaoFiscal } from "@/lib/situacao-fiscal";
+
+/** Fotografia dos débitos gravada na certidão (coluna JSON). Valores em texto decimal, datas ISO. */
+export type DebitosCertidao = {
+  resumo: ResumoSituacaoFiscal;
+  guias: { numero: number; exercicio: number; inscricao: string; parcela: number; totalParcelas: number; vencimento: string; valor: string }[];
+  aEmitir: { exercicio: number; inscricao: string; valor: string }[];
+};
 
 /**
  * Tipos de certidão do Código Tributário Nacional:

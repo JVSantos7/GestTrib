@@ -18,6 +18,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Tudo, menos: o login, as rotas da biblioteca de autenticação e os arquivos estáticos.
-  matcher: ["/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)"],
+  // Tudo, menos: o login, a validação pública de certidões, as rotas da biblioteca de
+  // autenticação e os arquivos estáticos.
+  matcher: ["/((?!login|validar-certidao|api/auth|_next/static|_next/image|favicon.ico).*)"],
 };

@@ -47,6 +47,7 @@ model Contribuinte {
 
   imoveis         Imovel[]
   lancamentosIptu LancamentoIptu[]
+  certidoes       Certidao[]
 
   @@index([nome])
   @@map("contribuintes")
@@ -203,6 +204,36 @@ model Pagamento {
 
   @@unique([guiaId, vigente])
   @@map("pagamentos")
+}
+
+enum TipoCertidao {
+  NEGATIVA
+  POSITIVA_EFEITO_NEGATIVA
+  POSITIVA
+}
+
+// Certidão de débitos emitida. Nunca é alterada nem apagada: é a prova do que foi certificado
+// naquele momento, mesmo que a situação do contribuinte mude depois.
+model Certidao {
+  id             String       @id @default(uuid()) @db.Uuid
+  // Número sequencial gerado pelo banco; impresso com o ano ("000042/2026").
+  numero         Int          @unique @default(autoincrement())
+  ano            Int          @db.SmallInt
+  // Código de validação ("K7QM-3XRA-PW9D-HB2T"): quem recebe a certidão confere por ele.
+  codigo         String       @unique @db.Char(19)
+  tipo           TipoCertidao
+  contribuinteId String       @map("contribuinte_id") @db.Uuid
+  contribuinte   Contribuinte @relation(fields: [contribuinteId], references: [id], onDelete: Restrict)
+  // Fotografia do contribuinte e dos débitos na emissão (o cadastro e as guias podem mudar depois).
+  nome           String       @db.VarChar(150)
+  documento      String       @db.VarChar(14)
+  debitos        Json
+  emitidaEm      DateTime     @default(now()) @map("emitida_em") @db.Timestamptz(3)
+  // Último dia de validade (só a data).
+  validaAte      DateTime     @map("valida_ate") @db.Date
+
+  @@index([contribuinteId])
+  @@map("certidoes")
 }
 
 // ---------------------------------------------------------------------------

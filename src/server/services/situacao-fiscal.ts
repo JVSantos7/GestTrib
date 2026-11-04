@@ -11,16 +11,17 @@ import { ATIVAS } from "@/server/services/guias";
  * O devedor é quem era o proprietário na data do lançamento (`contribuinteId` do lançamento),
  * não o dono atual do imóvel: a dívida de um imóvel vendido continua com quem a deixou.
  */
-export async function consultarSituacaoFiscal(contribuinteId: string) {
+export async function consultarSituacaoFiscal(contribuinteId: string, db: Prisma.TransactionClient = prisma) {
   const hoje = hojeIso();
   if (!ehUuid(contribuinteId)) {
     return { hoje, resumo: calcularSituacaoFiscal([], [], hoje), guias: [], lancamentosAEmitir: [] };
   }
 
+  // `db` permite rodar a consulta dentro de uma transação (ex.: na emissão da certidão).
   const [guias, lancamentosAEmitir] = await Promise.all([
     // Guias em aberto de lançamentos vigentes. (Ao cancelar o lançamento, as abertas já são canceladas;
     // o filtro em `vigente` é uma segunda garantia.)
-    prisma.guia.findMany({
+    db.guia.findMany({
       where: { situacao: "ABERTA", lancamento: { contribuinteId, vigente: true } },
       select: {
         id: true,
@@ -34,7 +35,7 @@ export async function consultarSituacaoFiscal(contribuinteId: string) {
       orderBy: [{ vencimento: "asc" }, { numero: "asc" }],
     }),
     // IPTU vigente que ainda não virou cobrança: nenhuma guia aberta ou paga.
-    prisma.lancamentoIptu.findMany({
+    db.lancamentoIptu.findMany({
       where: { contribuinteId, vigente: true, guias: { none: ATIVAS } },
       select: { id: true, exercicio: true, inscricao: true, valorImposto: true },
       orderBy: [{ exercicio: "asc" }, { inscricao: "asc" }],

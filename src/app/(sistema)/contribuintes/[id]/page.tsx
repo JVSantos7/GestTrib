@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { emitirCertidaoAcao } from "@/app/(sistema)/certidoes/actions";
 import { removerContribuinte } from "@/app/(sistema)/contribuintes/actions";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
+import { SecaoCertidoes } from "@/components/certidoes/SecaoCertidoes";
 import { SituacaoFiscal } from "@/components/contribuintes/SituacaoFiscal";
 import { CLASSE_BOTAO_PRIMARIO } from "@/components/form/estilos";
 import { Historico } from "@/components/Historico";
 import { SituacaoLancamento } from "@/components/iptu/SituacaoLancamento";
 import { Prisma } from "@/generated/prisma/client";
+import { hojeIso } from "@/lib/datas";
 import { formatarReais } from "@/lib/decimal";
 import { formatarDocumento } from "@/lib/documento";
 import { formatarCep, formatarDataHora, formatarTelefone } from "@/lib/formatacao";
 import { formatarInscricao, ROTULOS_USO } from "@/lib/schemas/imovel";
+import { listarCertidoesDoContribuinte } from "@/server/services/certidoes";
 import { buscarContribuinte } from "@/server/services/contribuintes";
 import { listarImoveisDoContribuinte } from "@/server/services/imoveis";
 import { listarLancamentosDoContribuinte } from "@/server/services/lancamentos-iptu";
@@ -31,21 +35,25 @@ function Dado({ rotulo, valor }: { rotulo: string; valor: string | null }) {
 
 export default async function DetalhesContribuinte({ params }: PageProps<"/contribuintes/[id]">) {
   await exigirPermissaoPagina({ contribuinte: ["ver"] });
-  const [podeEditar, podeExcluir, podeCriarImovel, podeVerIptu, podeVerGuias] = await Promise.all([
-    pode({ contribuinte: ["editar"] }),
-    pode({ contribuinte: ["excluir"] }),
-    pode({ imovel: ["criar"] }),
-    pode({ iptu: ["ver"] }),
-    pode({ guia: ["ver"] }),
-  ]);
+  const [podeEditar, podeExcluir, podeCriarImovel, podeVerIptu, podeVerGuias, podeVerCertidoes, podeEmitirCertidao] =
+    await Promise.all([
+      pode({ contribuinte: ["editar"] }),
+      pode({ contribuinte: ["excluir"] }),
+      pode({ imovel: ["criar"] }),
+      pode({ iptu: ["ver"] }),
+      pode({ guia: ["ver"] }),
+      pode({ certidao: ["ver"] }),
+      pode({ certidao: ["emitir"] }),
+    ]);
 
   const { id } = await params;
   const contribuinte = await buscarContribuinte(id);
   if (!contribuinte) notFound();
-  const [imoveis, lancamentos, situacaoFiscal] = await Promise.all([
+  const [imoveis, lancamentos, situacaoFiscal, certidoes] = await Promise.all([
     listarImoveisDoContribuinte(contribuinte.id),
     podeVerIptu ? listarLancamentosDoContribuinte(contribuinte.id) : [],
     podeVerGuias ? consultarSituacaoFiscal(contribuinte.id) : null,
+    podeVerCertidoes ? listarCertidoesDoContribuinte(contribuinte.id) : [],
   ]);
   const vigentes = lancamentos.filter((l) => l.vigente);
 
@@ -171,6 +179,14 @@ export default async function DetalhesContribuinte({ params }: PageProps<"/contr
             </ul>
           )}
         </section>
+      )}
+
+      {podeVerCertidoes && (
+        <SecaoCertidoes
+          certidoes={certidoes}
+          hoje={hojeIso()}
+          emitir={podeEmitirCertidao ? emitirCertidaoAcao.bind(null, contribuinte.id) : undefined}
+        />
       )}
 
       <Historico entidade="Contribuinte" entidadeId={contribuinte.id} />
