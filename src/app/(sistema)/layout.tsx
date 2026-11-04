@@ -12,7 +12,7 @@ export default async function LayoutSistema({ children }: LayoutProps<"/">) {
       <Cabecalho />
       <div className="flex flex-1 flex-col md:flex-row">
         <MenuLateral mostrarAdministracao={mostrarAdministracao} />
-        <main className="flex-1 bg-zinc-50 p-4 dark:bg-black md:p-8">{children}</main>
+        <main className="flex-1 bg-zinc-50 p-4 dark:bg-black md:p-8 print:bg-white print:p-0">{children}</main>
       </div>
     </>
   );

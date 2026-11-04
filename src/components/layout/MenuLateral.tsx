@@ -18,7 +18,7 @@ const ITENS: ItemMenu[] = [
   { rotulo: "Contribuintes", href: "/contribuintes", disponivel: true },
   { rotulo: "Imóveis", href: "/imoveis", disponivel: true },
   { rotulo: "IPTU", href: "/iptu", disponivel: true },
-  { rotulo: "Guias", href: "/guias", disponivel: false },
+  { rotulo: "Guias", href: "/guias", disponivel: true },
   { rotulo: "Relatórios", href: "/relatorios", disponivel: false },
   { rotulo: "Usuários", href: "/usuarios", disponivel: true, somenteAdministrador: true },
 ];
@@ -33,7 +33,7 @@ export function MenuLateral({ mostrarAdministracao }: { mostrarAdministracao: bo
   const [aberto, setAberto] = useState(false);
 
   return (
-    <aside className="shrink-0 border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 md:w-56 md:border-r md:border-b-0">
+    <aside className="shrink-0 print:hidden border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950 md:w-56 md:border-r md:border-b-0">
       <button
         type="button"
         onClick={() => setAberto((valor) => !valor)}

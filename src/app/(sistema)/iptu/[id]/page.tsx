@@ -172,7 +172,11 @@ export default async function DetalhesLancamento({ params }: PageProps<"/iptu/[i
                     const vencimento = dataParaIso(guia.vencimento);
                     return (
                       <tr key={guia.id}>
-                        <td className="px-4 py-2.5 font-medium">{formatarNumeroGuia(guia.numero)}</td>
+                        <td className="px-4 py-2.5 font-medium">
+                          <Link href={`/guias/${guia.id}`} className="text-emerald-700 hover:underline dark:text-emerald-400">
+                            {formatarNumeroGuia(guia.numero)}
+                          </Link>
+                        </td>
                         <td className="px-4 py-2.5">{rotuloParcela(guia.parcela, guia.totalParcelas)}</td>
                         <td className="px-4 py-2.5">{formatarDataIso(vencimento)}</td>
                         <td className="px-4 py-2.5 text-right whitespace-nowrap">{formatarReais(guia.valor)}</td>

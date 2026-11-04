@@ -9,7 +9,7 @@ export async function Cabecalho() {
   const perfil = sessao?.user.role as Perfil | undefined;
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-950 md:px-6">
+    <header className="flex h-14 print:hidden shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-950 md:px-6">
       <Link href="/" className="flex items-baseline gap-2">
         <span className="text-lg font-semibold tracking-tight text-emerald-700 dark:text-emerald-400">
           GestTrib
