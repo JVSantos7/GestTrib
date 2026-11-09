@@ -32,7 +32,7 @@ export default async function Relatorios() {
         Cada relatório pode ser impresso (ou salvo em PDF pela impressão do navegador) e baixado em CSV para o Excel.
       </p>
 
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+      <ul className="mt-6 flex flex-col gap-4">
         {RELATORIOS.map((relatorio) => (
           <li key={relatorio.href}>
             <Link
