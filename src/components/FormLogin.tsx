@@ -19,6 +19,7 @@ export function FormLogin({ destino }: { destino: string }) {
   const router = useRouter();
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, setPendente] = useState(false);
+  const [senhaVisivel, setSenhaVisivel] = useState(false);
 
   async function entrar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -61,14 +62,27 @@ export function FormLogin({ destino }: { destino: string }) {
         <label htmlFor="senha" className="block text-sm font-medium">
           Senha
         </label>
-        <input
-          id="senha"
-          name="senha"
-          type="password"
-          autoComplete="current-password"
-          required
-          className={CLASSE_CAMPO}
-        />
+        <div className="relative">
+          <input
+            id="senha"
+            name="senha"
+            type={senhaVisivel ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            className={`${CLASSE_CAMPO} pr-20`}
+          />
+          {/* Ajuda a conferir a senha digitada (útil no celular). type="button" para não enviar o formulário;
+              aria-pressed avisa ao leitor de tela se a senha está visível. */}
+          <button
+            type="button"
+            onClick={() => setSenhaVisivel((valor) => !valor)}
+            aria-pressed={senhaVisivel}
+            aria-controls="senha"
+            className="absolute inset-y-0 right-0 mt-1 rounded-r-md px-3 text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+          >
+            {senhaVisivel ? "Ocultar" : "Mostrar"}
+          </button>
+        </div>
       </div>
       <button type="submit" disabled={pendente} className={`${CLASSE_BOTAO_PRIMARIO} w-full`}>
         {pendente ? "Entrando…" : "Entrar"}

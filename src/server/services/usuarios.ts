@@ -1,6 +1,7 @@
 import "server-only";
 import { APIError } from "better-auth/api";
 import { headers } from "next/headers";
+import { ehEmailDemo } from "@/lib/demo";
 import type { Perfil } from "@/lib/permissoes";
 import type { NovoUsuario } from "@/lib/schemas/usuario";
 import { ehUuid } from "@/lib/uuid";
@@ -69,6 +70,13 @@ async function garantirOutroAdministrador(id: string) {
   }
 }
 
+/** Contas demo são compartilhadas por todos os visitantes (ver `src/lib/demo.ts`). */
+function garantirQueNaoEhDemo(usuario: { email: string }) {
+  if (ehEmailDemo(usuario.email)) {
+    throw new OperacaoNaoPermitidaError("As contas de demonstração não podem ser alteradas. Crie um usuário novo para testar.");
+  }
+}
+
 function garantirQueNaoEhVoceMesmo(id: string, responsavel: UsuarioLogado, mensagem: string) {
   if (id === responsavel.id) {
     throw new OperacaoNaoPermitidaError(`${mensagem} Peça a outro administrador.`);
@@ -102,6 +110,7 @@ export async function criarUsuario(dados: NovoUsuario, responsavel: UsuarioLogad
 
 export async function alterarPerfil(id: string, perfil: Perfil, responsavel: UsuarioLogado) {
   const usuario = await exigirUsuario(id);
+  garantirQueNaoEhDemo(usuario);
   garantirQueNaoEhVoceMesmo(id, responsavel, "Você não pode alterar o seu próprio perfil.");
   if (usuario.role === "administrador" && perfil !== "administrador") await garantirOutroAdministrador(id);
 
@@ -111,6 +120,7 @@ export async function alterarPerfil(id: string, perfil: Perfil, responsavel: Usu
 
 export async function desativarUsuario(id: string, responsavel: UsuarioLogado) {
   const usuario = await exigirUsuario(id);
+  garantirQueNaoEhDemo(usuario);
   garantirQueNaoEhVoceMesmo(id, responsavel, "Você não pode desativar a sua própria conta.");
   if (usuario.role === "administrador") await garantirOutroAdministrador(id);
 
@@ -126,7 +136,7 @@ export async function reativarUsuario(id: string, responsavel: UsuarioLogado) {
 }
 
 export async function redefinirSenha(id: string, novaSenha: string, responsavel: UsuarioLogado) {
-  await exigirUsuario(id);
+  garantirQueNaoEhDemo(await exigirUsuario(id));
   const cabecalhos = await headers();
   await auth.api.setUserPassword({ body: { userId: id, newPassword: novaSenha }, headers: cabecalhos });
   // Quem estava logado com a senha antiga precisa entrar de novo (a biblioteca não faz isso sozinha).

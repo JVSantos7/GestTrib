@@ -1,12 +1,28 @@
 import "server-only";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { admin } from "better-auth/plugins";
+import { ehEmailDemo } from "@/lib/demo";
 import { ac, perfis } from "@/lib/permissoes";
 import { prisma } from "@/server/db";
 
 const OITO_HORAS = 60 * 60 * 8;
+
+const MENSAGEM_DEMO = "As contas de demonstração não podem ser alteradas.";
+// Rotas em que o administrador age sobre outro usuário (o id vem em `userId`).
+// Desbloquear fica de fora: se algo der errado, reativar uma conta demo só ajuda.
+const ROTAS_DO_ADMIN_SOBRE_USUARIO = new Set([
+  "/admin/ban-user",
+  "/admin/set-role",
+  "/admin/set-user-password",
+  "/admin/update-user",
+  "/admin/remove-user",
+  "/admin/revoke-user-sessions",
+]);
+// Rotas em que o usuário logado altera a própria conta.
+const ROTAS_DA_PROPRIA_CONTA = new Set(["/change-password", "/change-email", "/update-user", "/delete-user"]);
 
 export const auth = betterAuth({
   appName: "GestTrib",
@@ -40,6 +56,25 @@ export const auth = betterAuth({
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
     },
+  },
+
+  hooks: {
+    // Roda antes de qualquer rota da biblioteca: tanto as chamadas HTTP (/api/auth/...) quanto
+    // as feitas pelos services (auth.api...). Por isso a proteção das contas demo fica aqui:
+    // um visitante logado como administrador não consegue contorná-la chamando a API direto.
+    before: createAuthMiddleware(async (ctx) => {
+      if (ROTAS_DO_ADMIN_SOBRE_USUARIO.has(ctx.path)) {
+        const userId = (ctx.body as { userId?: unknown } | undefined)?.userId;
+        if (typeof userId === "string") {
+          const alvo = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+          if (alvo && ehEmailDemo(alvo.email)) throw new APIError("FORBIDDEN", { message: MENSAGEM_DEMO });
+        }
+      }
+      if (ROTAS_DA_PROPRIA_CONTA.has(ctx.path)) {
+        const sessao = await getSessionFromCtx(ctx);
+        if (sessao && ehEmailDemo(sessao.user.email)) throw new APIError("FORBIDDEN", { message: MENSAGEM_DEMO });
+      }
+    }),
   },
 
   plugins: [
