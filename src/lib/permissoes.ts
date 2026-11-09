@@ -11,6 +11,8 @@ const recursos = {
   iptu: ["ver", "lancar", "cancelar"],
   guia: ["ver", "emitir", "baixar", "estornar"],
   certidao: ["ver", "emitir"],
+  // Relatórios só leem dados: não há o que criar nem alterar.
+  relatorio: ["ver"],
 } as const;
 
 export const ac = createAccessControl(recursos);
@@ -28,6 +30,7 @@ export const perfis = {
     iptu: ["ver", "lancar", "cancelar"],
     guia: ["ver", "emitir", "baixar", "estornar"],
     certidao: ["ver", "emitir"],
+    relatorio: ["ver"],
   }),
   operador: ac.newRole({
     contribuinte: ["ver", "criar", "editar", "excluir"],
@@ -36,6 +39,7 @@ export const perfis = {
     iptu: ["ver", "lancar", "cancelar"],
     guia: ["ver", "emitir", "baixar"],
     certidao: ["ver", "emitir"],
+    relatorio: ["ver"],
   }),
   consulta: ac.newRole({
     contribuinte: ["ver"],
@@ -44,6 +48,7 @@ export const perfis = {
     iptu: ["ver"],
     guia: ["ver"],
     certidao: ["ver"],
+    relatorio: ["ver"],
   }),
 };
 
