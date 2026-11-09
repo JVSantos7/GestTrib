@@ -203,6 +203,8 @@ model Pagamento {
   motivoEstorno String?   @map("motivo_estorno") @db.VarChar(300)
 
   @@unique([guiaId, vigente])
+  // O relatório de arrecadação filtra pelo período de pagamento.
+  @@index([dataPagamento])
   @@map("pagamentos")
 }
 
