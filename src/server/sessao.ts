@@ -64,6 +64,19 @@ export async function exigirPermissaoPagina(permissoes?: Permissoes): Promise<Us
 }
 
 /**
+ * Para Route Handlers (ex.: download de CSV). Uma rota devolve um arquivo, não uma tela, então
+ * não dá para redirecionar como nas páginas: devolve a resposta de erro pronta, ou null se pode seguir.
+ * Uso: `const negado = await respostaSemPermissao({...}); if (negado) return negado;`
+ */
+export async function respostaSemPermissao(permissoes: Permissoes): Promise<Response | null> {
+  const usuario = await usuarioAtual();
+  // 401: não sabemos quem é (sessão expirada). 403: sabemos, mas o perfil não permite.
+  if (!usuario) return new Response("Sua sessão expirou. Entre novamente.", { status: 401 });
+  if (!permite(usuario, permissoes)) return new Response("Seu perfil não permite fazer isso.", { status: 403 });
+  return null;
+}
+
+/**
  * Para Server Actions. Toda action é um endereço que qualquer um pode chamar direto,
  * sem passar pela tela; por isso cada uma confere login e permissão logo na primeira linha.
  */

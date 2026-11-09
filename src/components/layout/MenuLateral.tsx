@@ -19,7 +19,7 @@ const ITENS: ItemMenu[] = [
   { rotulo: "Imóveis", href: "/imoveis", disponivel: true },
   { rotulo: "IPTU", href: "/iptu", disponivel: true },
   { rotulo: "Guias", href: "/guias", disponivel: true },
-  { rotulo: "Relatórios", href: "/relatorios", disponivel: false },
+  { rotulo: "Relatórios", href: "/relatorios", disponivel: true },
   { rotulo: "Usuários", href: "/usuarios", disponivel: true, somenteAdministrador: true },
 ];
 
