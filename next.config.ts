@@ -28,6 +28,8 @@ const nextConfig: NextConfig = {
       { source: "/imoveis/:caminho*", headers: SEM_CACHE },
       { source: "/iptu/:caminho*", headers: SEM_CACHE },
       { source: "/guias/:caminho*", headers: SEM_CACHE },
+      // A certidão traz o CPF/CNPJ completo do contribuinte.
+      { source: "/certidoes/:caminho*", headers: SEM_CACHE },
       { source: "/relatorios/:caminho*", headers: SEM_CACHE },
       { source: "/usuarios/:caminho*", headers: SEM_CACHE },
     ];
