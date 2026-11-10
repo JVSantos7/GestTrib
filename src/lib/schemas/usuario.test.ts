@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { novaSenhaSchema, novoUsuarioSchema, perfilSchema } from "./usuario";
+import { novaContaSchema, novaSenhaSchema, novoUsuarioSchema, perfilSchema } from "./usuario";
 
 const base = {
   nome: " Maria Fiscal ",
@@ -46,5 +46,28 @@ describe("perfilSchema e novaSenhaSchema", () => {
   it("valida a nova senha com confirmação", () => {
     expect(novaSenhaSchema.safeParse({ senha: "nova-senha-123", confirmacao: "nova-senha-123" }).success).toBe(true);
     expect(novaSenhaSchema.safeParse({ senha: "nova-senha-123", confirmacao: "x" }).success).toBe(false);
+  });
+});
+
+describe("novaContaSchema (cadastro pelo próprio visitante)", () => {
+  const conta = { nome: " Ana Visitante ", email: " Ana@Exemplo.com ", senha: "senha-forte-123", confirmacao: "senha-forte-123" };
+
+  it("normaliza nome e e-mail como no cadastro do administrador", () => {
+    expect(novaContaSchema.parse(conta)).toEqual({
+      nome: "Ana Visitante",
+      email: "ana@exemplo.com",
+      senha: "senha-forte-123",
+      confirmacao: "senha-forte-123",
+    });
+  });
+
+  it("descarta um perfil enviado pelo navegador: quem decide é o servidor", () => {
+    expect(novaContaSchema.parse({ ...conta, perfil: "administrador", role: "administrador" })).not.toHaveProperty("perfil");
+    expect(novaContaSchema.parse({ ...conta, perfil: "administrador", role: "administrador" })).not.toHaveProperty("role");
+  });
+
+  it("exige senha forte e confirmação igual", () => {
+    expect(novaContaSchema.safeParse({ ...conta, senha: "curta", confirmacao: "curta" }).success).toBe(false);
+    expect(novaContaSchema.safeParse({ ...conta, confirmacao: "outra-senha-123" }).success).toBe(false);
   });
 });

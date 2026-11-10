@@ -3,9 +3,10 @@ import { APIError } from "better-auth/api";
 import { headers } from "next/headers";
 import { ehEmailDemo } from "@/lib/demo";
 import type { Perfil } from "@/lib/permissoes";
-import type { NovoUsuario } from "@/lib/schemas/usuario";
+import type { NovaConta, NovoUsuario } from "@/lib/schemas/usuario";
 import { ehUuid } from "@/lib/uuid";
 import { auth } from "@/server/auth";
+import { cadastroAberto, PERFIL_CADASTRO_ABERTO } from "@/server/cadastro";
 import { prisma } from "@/server/db";
 import { registrarAuditoria } from "@/server/services/auditoria";
 import type { UsuarioLogado } from "@/server/sessao";
@@ -23,6 +24,13 @@ export class EmailJaCadastradoError extends Error {
   constructor() {
     super("Já existe um usuário com este e-mail.");
     this.name = "EmailJaCadastradoError";
+  }
+}
+
+export class CadastroFechadoError extends Error {
+  constructor() {
+    super("O cadastro de novas contas está fechado. Procure o administrador do sistema.");
+    this.name = "CadastroFechadoError";
   }
 }
 
@@ -99,6 +107,37 @@ export async function criarUsuario(dados: NovoUsuario, responsavel: UsuarioLogad
       headers: await headers(),
     });
     await auditar(user.id, "CRIACAO", responsavel, { nome: dados.nome, email: dados.email, perfil: dados.perfil });
+    return user;
+  } catch (erro) {
+    if (erro instanceof APIError && erro.body?.code?.startsWith("USER_ALREADY_EXISTS")) {
+      throw new EmailJaCadastradoError();
+    }
+    throw erro;
+  }
+}
+
+/**
+ * Conta criada pelo próprio visitante, na tela "Criar conta".
+ *
+ * A chamada vai sem `headers` de propósito: para a biblioteca, isso é uma chamada interna do
+ * servidor (de confiança), então ela aceita o perfil informado aqui. Pelo navegador, a rota pública
+ * de cadastro continua desligada (`disableSignUp` em src/server/auth.ts), e por isso ninguém
+ * consegue escolher o próprio perfil.
+ */
+export async function criarContaPeloCadastro(dados: NovaConta) {
+  if (!cadastroAberto()) throw new CadastroFechadoError();
+  try {
+    const { user } = await auth.api.createUser({
+      body: { name: dados.nome, email: dados.email, password: dados.senha, role: PERFIL_CADASTRO_ABERTO },
+    });
+    // Quem cria a conta é a própria pessoa: ela mesma fica como responsável no histórico.
+    const responsavel: UsuarioLogado = { id: user.id, nome: user.name, email: user.email, perfil: PERFIL_CADASTRO_ABERTO };
+    await auditar(user.id, "CRIACAO", responsavel, {
+      nome: dados.nome,
+      email: dados.email,
+      perfil: PERFIL_CADASTRO_ABERTO,
+      origem: "Cadastro pela tela de login",
+    });
     return user;
   } catch (erro) {
     if (erro instanceof APIError && erro.body?.code?.startsWith("USER_ALREADY_EXISTS")) {

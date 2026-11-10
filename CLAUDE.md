@@ -18,7 +18,7 @@ Login/perfis: better-auth (plugin admin + access control) · Testes: Vitest
 ## Comandos
 - `npm run db:up` / `npm run db:down` — sobe/derruba o Postgres do `docker-compose.yml` (porta **5434**).
 - `npm run db:migrate` — `prisma migrate dev` + regenera o client. Copie `.env.example` para `.env` antes.
-- `npm run criar-admin` — cria um usuário Administrador pelo terminal (não há tela de cadastro aberta).
+- `npm run criar-admin` — cria um usuário Administrador pelo terminal (o cadastro pela tela, quando ligado por `CADASTRO_ABERTO`, sempre cria Operador).
 - `npm run dev` · `npm run build` · `npm run lint`
 - `npm test` — roda todos os testes (`src/**/*.test.ts`).
 - Um arquivo: `npx vitest run src/lib/iptu.test.ts` · Um caso: `npx vitest run -t "trecho do nome"`
@@ -80,5 +80,7 @@ Ordem de execução: 1, 2, 3, **7**, 4, 5, 6, 8, 9. A Fase 7 (login) foi antecip
 para o sistema não crescer sem controle de acesso. Toda página nova chama
 `exigirPermissaoPagina` e toda Server Action chama `exigirPermissaoAcao`
 (`src/server/sessao.ts`); permissões por perfil ficam em `src/lib/permissoes.ts`.
-Única exceção: `/validar-certidao` é pública de propósito (liberada no matcher de
-`src/proxy.ts`) e só expõe o mínimo para conferir a autenticidade de uma certidão.
+Exceções públicas de propósito (liberadas no matcher de `src/proxy.ts`): `/validar-certidao`,
+que só expõe o mínimo para conferir uma certidão, e as telas de `/login` (apresentação, entrar e
+criar conta). A action `criarConta` é pública; quem a protege é o service `criarContaPeloCadastro`
+(recusa com `CADASTRO_ABERTO` desligado e fixa o perfil em `PERFIL_CADASTRO_ABERTO`, de `src/server/cadastro.ts`).

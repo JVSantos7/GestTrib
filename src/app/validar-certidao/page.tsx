@@ -64,7 +64,7 @@ export default async function ValidarCertidao({ searchParams }: PageProps<"/vali
         {certidao && <Resultado certidao={certidao} />}
 
         <p className="mt-6 text-xs text-zinc-500">
-          Sistema de demonstração com dados fictícios. <Link href="/login" className="underline">Entrar no sistema</Link>
+          Sistema de demonstração com dados fictícios. <Link href="/login/entrar" className="underline">Entrar no sistema</Link>
         </p>
       </div>
     </main>

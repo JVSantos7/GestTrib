@@ -34,7 +34,9 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    // Ninguém cria a própria conta: usuários são criados pelo administrador.
+    // A rota pública de cadastro (/api/auth/sign-up) fica sempre desligada: por ela o navegador
+    // escolheria os dados da conta. O cadastro aberto (CADASTRO_ABERTO no .env) passa pela action
+    // `criarConta`, que valida tudo e define o perfil no servidor (criarContaPeloCadastro).
     disableSignUp: true,
     minPasswordLength: 10,
     maxPasswordLength: 128,

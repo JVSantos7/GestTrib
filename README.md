@@ -29,6 +29,10 @@ emissão de guias, baixa de pagamentos, situação fiscal, certidão de débitos
 | **Operador** | Cadastros, lançamentos, emissão de guias, baixas e certidões. Não estorna nem gerencia usuários. |
 | **Consulta** | Só visualiza. |
 
+Com o cadastro aberto ligado (`CADASTRO_ABERTO="true"`), qualquer visitante cria a própria conta pela
+tela de login e entra como **Operador**. O perfil é definido no servidor: pelo formulário não dá para
+pedir outro. Num uso real, o cadastro fica desligado e as contas são criadas pelo administrador.
+
 ## Tecnologias
 
 - **Next.js 16** (App Router, Server Components e Server Actions), **React 19**, **TypeScript**
@@ -66,7 +70,8 @@ npm run dev
 ```
 
 Para ter as contas de demonstração (botões "Entrar como..." na tela de login, uma por perfil),
-defina `DEMO_HABILITADA="true"` e `DEMO_SENHA` no `.env` e rode `npm run criar-demo`.
+defina `DEMO_HABILITADA="true"` e `DEMO_SENHA` no `.env` e rode `npm run criar-demo`. Para o botão
+"Criar conta", defina `CADASTRO_ABERTO="true"`.
 
 ### Comandos
 
@@ -79,7 +84,7 @@ defina `DEMO_HABILITADA="true"` e `DEMO_SENHA` no `.env` e rode `npm run criar-d
 | `npm run db:migrate` | Aplica as migrations e gera o client do Prisma. |
 | `npm run db:seed` | Carrega os dados fictícios (só com o banco vazio). |
 | `npm run db:studio` | Abre o Prisma Studio para olhar o banco. |
-| `npm run criar-admin` | Cria um administrador pelo terminal. Não existe tela de cadastro aberta. |
+| `npm run criar-admin` | Cria um administrador pelo terminal (o cadastro pela tela nunca dá esse perfil). |
 | `npm run criar-demo` | Cria ou restaura as contas de demonstração. |
 
 Para apagar o banco e recomeçar: `npx prisma migrate reset` (apaga **tudo**, inclusive usuários).
@@ -109,7 +114,8 @@ Página (Server Component)       exige permissão e lê dados pelos services
 ```
 src/
 ├─ app/(sistema)/<módulo>/   páginas e Server Actions de cada módulo
-├─ app/validar-certidao/     única página pública: confere a autenticidade de uma certidão
+├─ app/login/                páginas públicas: apresentação, entrar e criar conta
+├─ app/validar-certidao/     página pública: confere a autenticidade de uma certidão
 ├─ components/               componentes de interface (formulários, tabelas, histórico)
 ├─ lib/                      funções puras e testadas: cálculo do IPTU, parcelas, datas,
 │  │                         decimais pt-BR, CPF/CNPJ, situação fiscal, CSV
