@@ -14,6 +14,7 @@
     "db:migrate": "prisma migrate dev",
     "postdb:migrate": "prisma generate",
     "db:studio": "prisma studio",
+    "db:seed": "prisma db seed",
     "criar-admin": "tsx --conditions=react-server scripts/criar-admin.ts",
     "criar-demo": "tsx --conditions=react-server scripts/criar-demo.ts"
   },
