@@ -13,9 +13,11 @@ const QUADROS_DESTAQUE: Keyframe[] = [
 /**
  * Botão do fim da apresentação: sobe até a barra e destaca "Criar conta | Entrar".
  *
- * É um link `#acesso` de propósito: se o JavaScript não carregar, o navegador ainda leva até a
- * barra. Com JavaScript, o clique é tratado aqui e o endereço não ganha `#acesso`, então
- * recarregar a página não acende o destaque, e cada clique toca a animação de novo.
+ * É um link `#top` de propósito: se o JavaScript não carregar, o navegador ainda sobe até o topo
+ * (pela especificação do HTML, `#top` sem elemento com esse id leva ao início da página). Não
+ * aponta para `#acesso` porque a barra é fixa (sticky): já está visível, e o navegador não rolaria.
+ * Com JavaScript, o clique é tratado aqui e o endereço não muda, então recarregar a página não
+ * acende o destaque, e cada clique toca a animação de novo.
  */
 export function BotaoIrParaAcesso({ children }: { children: React.ReactNode }) {
   function irParaAcesso(evento: MouseEvent<HTMLAnchorElement>) {
@@ -33,7 +35,7 @@ export function BotaoIrParaAcesso({ children }: { children: React.ReactNode }) {
 
   return (
     <a
-      href={`#${ID_ACESSO}`}
+      href="#top"
       onClick={irParaAcesso}
       className="mt-4 inline-block rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50"
     >
