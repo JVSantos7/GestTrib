@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BarraPublica, comDestino } from "@/components/publico/BarraPublica";
+import { BarraPublica } from "@/components/publico/BarraPublica";
+import { BotaoIrParaAcesso } from "@/components/publico/BotaoIrParaAcesso";
 import { formatarDecimalBr, formatarReais } from "@/lib/decimal";
 import { calcularIptu, percentualParaFracao } from "@/lib/iptu";
 import { MUNICIPIO } from "@/lib/municipio";
@@ -121,22 +122,6 @@ export default async function Apresentacao({ searchParams }: PageProps<"/login">
                 O GestTrib organiza o caminho do IPTU em {MUNICIPIO.nome}/{MUNICIPIO.uf}: quem deve, quanto, até quando, o
                 que já foi pago e quem fez cada alteração.
               </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link
-                  href={comDestino("/login/entrar", destino)}
-                  className="rounded-md bg-emerald-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-800"
-                >
-                  Entrar no sistema
-                </Link>
-                {cadastro && (
-                  <Link
-                    href={comDestino("/login/criar-conta", destino)}
-                    className="rounded-md border border-zinc-300 bg-white px-5 py-2.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
-                  >
-                    Criar conta
-                  </Link>
-                )}
-              </div>
             </div>
 
             {/* Uma guia de IPTU de exemplo, com os mesmos números da seção de cálculo. */}
@@ -336,12 +321,8 @@ export default async function Apresentacao({ searchParams }: PageProps<"/login">
                 ? "Crie uma conta e experimente: cadastre um imóvel, lance o IPTU, emita a guia e dê baixa no pagamento."
                 : "Entre com a sua conta para cadastrar imóveis, lançar o IPTU, emitir guias e dar baixa em pagamentos."}
             </p>
-            <Link
-              href={comDestino(cadastro ? "/login/criar-conta" : "/login/entrar", destino)}
-              className="mt-4 inline-block rounded-md bg-white px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-50"
-            >
-              {cadastro ? "Criar conta" : "Entrar"}
-            </Link>
+            {/* Sobe até os botões "Criar conta | Entrar" da barra e os destaca. */}
+            <BotaoIrParaAcesso>Começar agora ↑</BotaoIrParaAcesso>
           </div>
         </section>
       </main>

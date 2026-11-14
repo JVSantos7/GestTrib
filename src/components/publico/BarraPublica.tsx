@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ID_ACESSO } from "@/components/publico/ids";
 import { MUNICIPIO } from "@/lib/municipio";
 
 /**
@@ -34,20 +35,25 @@ export function BarraPublica({ destino, cadastro }: Props) {
           >
             Validar certidão
           </Link>
-          {cadastro && (
+
+          {/* Alvo do botão "Começar agora" (fim da apresentação), que acende um contorno em volta
+              de Criar conta | Entrar. */}
+          <div id={ID_ACESSO} className="flex items-center gap-2 rounded-lg p-1">
+            {cadastro && (
+              <Link
+                href={comDestino("/login/criar-conta", destino)}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+              >
+                Criar conta
+              </Link>
+            )}
             <Link
-              href={comDestino("/login/criar-conta", destino)}
-              className="hidden rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium hover:bg-zinc-100 sm:inline-block dark:border-zinc-700 dark:hover:bg-zinc-900"
+              href={comDestino("/login/entrar", destino)}
+              className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
             >
-              Criar conta
+              Entrar
             </Link>
-          )}
-          <Link
-            href={comDestino("/login/entrar", destino)}
-            className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800"
-          >
-            Entrar
-          </Link>
+          </div>
         </div>
       </nav>
     </header>
