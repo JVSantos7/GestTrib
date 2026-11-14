@@ -332,5 +332,7 @@ model RegistroAuditoria {
 
   @@index([entidade, entidadeId])
   @@index([usuarioId])
+  // "Atividade recente" do painel de início: os últimos registros de todo o sistema.
+  @@index([criadoEm])
   @@map("registros_auditoria")
 }
