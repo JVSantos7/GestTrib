@@ -16,7 +16,11 @@
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
     "criar-admin": "tsx --conditions=react-server scripts/criar-admin.ts",
-    "criar-demo": "tsx --conditions=react-server scripts/criar-demo.ts"
+    "criar-demo": "tsx --conditions=react-server scripts/criar-demo.ts",
+    "producao:migrar": "dotenv run -f .env.producao -- prisma migrate deploy",
+    "producao:seed": "dotenv run -f .env.producao -- prisma db seed",
+    "producao:criar-admin": "dotenv run -f .env.producao -- npm run criar-admin",
+    "producao:criar-demo": "dotenv run -f .env.producao -- npm run criar-demo"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

@@ -99,6 +99,40 @@ O `db:seed` monta a história de um município que usa o sistema desde janeiro d
 
 As datas são relativas ao dia em que a carga roda, e o sorteio usa semente fixa: toda carga gera os mesmos dados.
 
+## Deploy (Vercel + Neon)
+
+O sistema roda na **Vercel** e o banco é um Postgres no **Neon**, os dois na região de São Paulo
+(`vercel.json` fixa as funções em `gru1`; crie o projeto do Neon em `AWS São Paulo`), para cada
+consulta não atravessar o continente.
+
+1. **Neon:** crie o projeto e copie duas URLs do painel: a com pooler (host com `-pooler`), que o
+   sistema usa, e a direta, que só as migrations usam.
+2. **Vercel:** importe o repositório e cadastre as variáveis em *Settings → Environment Variables*:
+
+   | Variável | Valor |
+   |---|---|
+   | `DATABASE_URL` | URL do Neon **com** pooler |
+   | `BETTER_AUTH_SECRET` | Chave nova, gerada só para produção |
+   | `BETTER_AUTH_URL` | Endereço público, ex.: `https://gesttrib.vercel.app` |
+   | `DEMO_HABILITADA` · `DEMO_SENHA` | Contas de demonstração (opcional) |
+   | `CADASTRO_ABERTO` | `"true"` para o botão "Criar conta" (opcional) |
+
+3. **Banco de produção, pelo seu computador:** crie um `.env.producao` (fica fora do Git, como todo
+   `.env*`) com `DATABASE_URL`, `DIRECT_URL` e as variáveis da demonstração, e rode:
+
+   ```bash
+   npm run producao:migrar        # aplica as migrations (prisma migrate deploy)
+   npm run producao:seed          # dados fictícios (só com o banco vazio)
+   npm run producao:criar-admin   # administrador
+   npm run producao:criar-demo    # contas de demonstração (se ligadas)
+   ```
+
+   Os comandos `producao:*` leem só o `.env.producao` e param com erro se ele não existir, para
+   nunca cair no banco errado. `migrate deploy` só aplica migrations prontas; ao contrário do
+   `migrate dev`, nunca apaga dados nem cria migrations novas.
+
+A cada migration nova, rode `npm run producao:migrar` **antes** do push que muda o código.
+
 ## Arquitetura
 
 Caminho de uma operação, do formulário ao banco:
