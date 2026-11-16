@@ -6,7 +6,10 @@ emissão de guias, baixa de pagamentos, situação fiscal, certidão de débitos
 > Projeto de portfólio. O município (**Vila Serena/PB**), as pessoas, os CPFs/CNPJs e os valores são
 > fictícios e não representam nenhuma prefeitura real.
 
-<!-- Depois do deploy: link da demonstração e capturas de tela (docs/telas/*.png). -->
+**Demonstração:** [gest-trib.vercel.app](https://gest-trib.vercel.app). Na tela de login, use os botões
+de **acesso de demonstração** (um por perfil) ou crie a sua conta, que entra como Operador.
+
+<!-- Capturas de tela: docs/telas/*.png -->
 
 ## O que o sistema faz
 
