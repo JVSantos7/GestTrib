@@ -3,7 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { EstadoExclusao } from "@/components/BotaoExcluir";
+import type { DadosCnpj, EnderecoCep } from "@/lib/brasilapi";
 import { contribuinteSchema, type ContribuinteEntrada } from "@/lib/schemas/contribuinte";
+import {
+  buscarDadosPorCnpj,
+  buscarEnderecoPorCep,
+  CepInvalidoError,
+  CepNaoEncontradoError,
+  CnpjInvalidoError,
+  CnpjNaoEncontradoError,
+  ServicoIndisponivelError,
+} from "@/server/services/consultas-externas";
 import {
   atualizarContribuinte,
   ContribuinteNaoEncontradoError,
@@ -74,6 +84,55 @@ export async function salvarContribuinte(
 
   revalidatePath("/contribuintes");
   redirect(`/contribuintes/${contribuinteId}`);
+}
+
+// ---------------------------------------------------------------------------
+// Consultas de CEP e CNPJ (BrasilAPI) para preencher o formulário.
+// ---------------------------------------------------------------------------
+
+export type ResultadoConsulta<T> =
+  | { dados: T; erro?: undefined }
+  // naoEncontrado: a consulta funcionou e o CEP/CNPJ não existe (diferente de "serviço fora do ar").
+  | { dados?: undefined; erro: string; naoEncontrado: boolean };
+
+const ERROS_CONSULTA = [
+  CepInvalidoError,
+  CepNaoEncontradoError,
+  CnpjInvalidoError,
+  CnpjNaoEncontradoError,
+  ServicoIndisponivelError,
+  AcessoNegadoError,
+];
+
+/** Consultar só faz sentido para quem pode cadastrar ou editar contribuintes. */
+async function exigirPermissaoCadastro() {
+  try {
+    await exigirPermissaoAcao({ contribuinte: ["criar"] });
+  } catch (erro) {
+    if (!(erro instanceof AcessoNegadoError)) throw erro;
+    await exigirPermissaoAcao({ contribuinte: ["editar"] });
+  }
+}
+
+async function consultar<T>(buscar: () => Promise<T>): Promise<ResultadoConsulta<T>> {
+  try {
+    await exigirPermissaoCadastro();
+    return { dados: await buscar() };
+  } catch (erro) {
+    if (ERROS_CONSULTA.some((tipo) => erro instanceof tipo)) {
+      const naoEncontrado = erro instanceof CepNaoEncontradoError || erro instanceof CnpjNaoEncontradoError;
+      return { erro: (erro as Error).message, naoEncontrado };
+    }
+    throw erro;
+  }
+}
+
+export async function consultarCep(cep: string): Promise<ResultadoConsulta<EnderecoCep>> {
+  return consultar(() => buscarEnderecoPorCep(String(cep)));
+}
+
+export async function consultarCnpj(cnpj: string): Promise<ResultadoConsulta<DadosCnpj>> {
+  return consultar(() => buscarDadosPorCnpj(String(cnpj)));
 }
 
 export async function removerContribuinte(id: string): Promise<EstadoExclusao> {
