@@ -50,6 +50,10 @@ model Contribuinte {
   certidoes       Certidao[]
 
   @@index([nome])
+  // Índices trigrama (extensão pg_trgm): a busca usa "contém o texto" (ILIKE '%texto%'),
+  // que um índice comum (B-tree) não consegue acelerar. O GIN com trigramas consegue.
+  @@index([nome(ops: raw("gin_trgm_ops"))], type: Gin, map: "contribuintes_nome_trgm_idx")
+  @@index([documento(ops: raw("gin_trgm_ops"))], type: Gin, map: "contribuintes_documento_trgm_idx")
   @@map("contribuintes")
 }
 
@@ -79,6 +83,9 @@ model Imovel {
 
   @@index([contribuinteId])
   @@index([logradouro])
+  // Trigramas para a busca por trecho (ver o comentário em Contribuinte).
+  @@index([logradouro(ops: raw("gin_trgm_ops"))], type: Gin, map: "imoveis_logradouro_trgm_idx")
+  @@index([bairro(ops: raw("gin_trgm_ops"))], type: Gin, map: "imoveis_bairro_trgm_idx")
   @@map("imoveis")
 }
 
