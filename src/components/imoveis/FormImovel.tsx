@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import type { CampoImovel, EstadoFormularioImovel } from "@/app/(sistema)/imoveis/actions";
+import { consultarCepImovel, type CampoImovel, type EstadoFormularioImovel } from "@/app/(sistema)/imoveis/actions";
+import { Aviso, useBuscaCep } from "@/components/form/BuscaCep";
 import { CLASSE_BOTAO_PRIMARIO, CLASSE_BOTAO_SECUNDARIO, CLASSE_CAMPO } from "@/components/form/estilos";
 import { MUNICIPIO } from "@/lib/municipio";
 import { ROTULOS_USO, USOS_IMOVEL } from "@/lib/schemas/imovel";
@@ -16,13 +17,32 @@ type Props = {
   hrefCancelar: string;
 };
 
-type OpcoesCampo = { opcional?: boolean; dica?: string; ajuda?: string; maximo?: number; desabilitado?: boolean };
+type OpcoesCampo = {
+  opcional?: boolean;
+  dica?: string;
+  ajuda?: string;
+  maximo?: number;
+  desabilitado?: boolean;
+  aoSair?: (campo: HTMLInputElement) => void;
+};
 
 export function FormImovel({ acao, valoresIniciais, nomeProprietario, rotuloEnviar, hrefCancelar }: Props) {
   const [estado, enviar, pendente] = useActionState(acao, {});
   const valores = estado.valores ?? valoresIniciais ?? {};
   const [uso, setUso] = useState(valores.uso ?? "RESIDENCIAL");
   const terreno = uso === "TERRENO";
+
+  // O município do sistema é fictício e o CEP é real: do CEP só aproveitamos rua e bairro.
+  // Cidade e UF do imóvel são sempre as de MUNICIPIO, nunca as que a BrasilAPI devolve.
+  const buscaCep = useBuscaCep({
+    cepInicial: valores.cep,
+    consultar: consultarCepImovel,
+    campos: ["logradouro", "bairro"],
+    mensagens: {
+      comRua: `Rua e bairro preenchidos pelo CEP (o município continua ${MUNICIPIO.nome}/${MUNICIPIO.uf}). Informe o número.`,
+      semRua: "Este CEP não indica a rua. Informe o logradouro e o bairro.",
+    },
+  });
 
   function campo(nome: CampoImovel, rotulo: string, opcoes: OpcoesCampo = {}) {
     const erro = estado.erros?.[nome];
@@ -43,6 +63,7 @@ export function FormImovel({ acao, valoresIniciais, nomeProprietario, rotuloEnvi
           placeholder={opcoes.dica}
           maxLength={opcoes.maximo}
           disabled={opcoes.desabilitado}
+          onBlur={opcoes.aoSair ? (evento) => opcoes.aoSair?.(evento.currentTarget) : undefined}
           aria-invalid={erro ? true : undefined}
           aria-describedby={descricao}
           className={CLASSE_CAMPO}
@@ -120,7 +141,10 @@ export function FormImovel({ acao, valoresIniciais, nomeProprietario, rotuloEnvi
 
       <fieldset className="grid gap-4 sm:grid-cols-6">
         <legend className="mb-3 text-base font-semibold">Endereço do imóvel</legend>
-        <div className="sm:col-span-2">{campo("cep", "CEP", { dica: "00000-000", maximo: 9 })}</div>
+        <div className="sm:col-span-2">
+          {campo("cep", "CEP", { dica: "00000-000", maximo: 9, aoSair: buscaCep.buscar })}
+          <Aviso aviso={buscaCep.aviso} carregando={buscaCep.consultando ? "Buscando endereço…" : undefined} />
+        </div>
         <div className="sm:col-span-4">{campo("logradouro", "Logradouro", { maximo: 150 })}</div>
         <div className="sm:col-span-2">{campo("numero", "Número", { maximo: 10 })}</div>
         <div className="sm:col-span-4">{campo("complemento", "Complemento", { opcional: true, maximo: 60 })}</div>

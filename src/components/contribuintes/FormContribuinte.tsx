@@ -8,28 +8,9 @@ import {
   type CampoContribuinte,
   type EstadoFormulario,
 } from "@/app/(sistema)/contribuintes/actions";
+import { Aviso, preencherCampos, useBuscaCep, type AvisoConsulta } from "@/components/form/BuscaCep";
 import { CLASSE_CAMPO } from "@/components/form/estilos";
 import { UFS } from "@/lib/schemas/contribuinte";
-
-/** Resultado da última consulta externa, mostrado logo abaixo do campo que a disparou. */
-type AvisoConsulta = { tipo: "erro" | "sucesso" | "atencao"; texto: string };
-
-const CORES_AVISO: Record<AvisoConsulta["tipo"], string> = {
-  erro: "text-red-600 dark:text-red-400",
-  sucesso: "text-emerald-700 dark:text-emerald-400",
-  atencao: "text-amber-700 dark:text-amber-400",
-};
-
-function Aviso({ aviso }: { aviso: AvisoConsulta | null }) {
-  // role="status": leitores de tela anunciam a mensagem sem tirar o foco do campo.
-  return (
-    <p role="status" className={`mt-1 text-sm ${aviso ? CORES_AVISO[aviso.tipo] : ""}`}>
-      {aviso?.texto}
-    </p>
-  );
-}
-
-const somenteDigitos = (valor: string) => valor.replace(/\D/g, "");
 
 type Props = {
   acao: (estado: EstadoFormulario, formData: FormData) => Promise<EstadoFormulario>;
@@ -44,66 +25,17 @@ export function FormContribuinte({ acao, valoresIniciais, rotuloEnviar, hrefCanc
   const [tipoPessoa, setTipoPessoa] = useState(valores.tipoPessoa ?? "FISICA");
   const pessoaFisica = tipoPessoa === "FISICA";
 
-  const [consultandoCep, iniciarConsultaCep] = useTransition();
+  const buscaCep = useBuscaCep({
+    cepInicial: valores.cep,
+    consultar: consultarCep,
+    campos: ["logradouro", "bairro", "cidade", "uf"],
+    mensagens: {
+      comRua: "Endereço preenchido pelo CEP. Confira e informe o número.",
+      semRua: "Cidade preenchida pelo CEP. Informe a rua e o bairro.",
+    },
+  });
   const [consultandoCnpj, iniciarConsultaCnpj] = useTransition();
-  const [avisoCep, setAvisoCep] = useState<AvisoConsulta | null>(null);
   const [avisoCnpj, setAvisoCnpj] = useState<AvisoConsulta | null>(null);
-  // Último CEP já consultado (ou o que veio do cadastro): sair do campo sem mudar o CEP
-  // não busca de novo, para não apagar um endereço que o operador corrigiu à mão.
-  const [ultimoCep, setUltimoCep] = useState(() => somenteDigitos(valores.cep ?? ""));
-
-  // Os campos usam defaultValue (o React não guarda o valor deles), então o preenchimento
-  // escreve direto no formulário. Cada campo conhece o formulário dele: `elemento.form`.
-
-  /**
-   * Escreve nos campos do formulário. Com `apagarVazios`, valor vazio limpa o campo;
-   * sem ele, valor vazio deixa o que já estava (o operador pode ter digitado).
-   */
-  function preencher(
-    formulario: HTMLFormElement,
-    dados: Partial<Record<CampoContribuinte, string>>,
-    { apagarVazios = false } = {},
-  ) {
-    for (const [nome, valor] of Object.entries(dados)) {
-      const elemento = formulario.elements.namedItem(nome);
-      if ((valor || apagarVazios) && (elemento instanceof HTMLInputElement || elemento instanceof HTMLSelectElement)) {
-        elemento.value = valor ?? "";
-      }
-    }
-  }
-
-  function buscarCep(campoCep: HTMLInputElement) {
-    const formulario = campoCep.form;
-    const cep = somenteDigitos(campoCep.value);
-    if (!formulario) return;
-    if (cep.length !== 8 || cep === ultimoCep) return;
-    setUltimoCep(cep);
-
-    iniciarConsultaCep(async () => {
-      setAvisoCep(null);
-      const resultado = await consultarCep(cep);
-      if (resultado.erro !== undefined) {
-        // Deixa sair do campo de novo para tentar outra vez (ex.: a API estava fora do ar).
-        setUltimoCep("");
-        // CEP que não existe: o endereço na tela era de outro CEP e não vale mais.
-        if (resultado.naoEncontrado) {
-          preencher(formulario, { logradouro: "", bairro: "", cidade: "", uf: "" }, { apagarVazios: true });
-        }
-        setAvisoCep({ tipo: "erro", texto: resultado.erro });
-        return;
-      }
-      const { logradouro, bairro, cidade, uf } = resultado.dados;
-      // O endereço tem de ser o deste CEP: o que ele não trouxe é apagado, não herdado do anterior.
-      preencher(formulario, { logradouro, bairro, cidade, uf }, { apagarVazios: true });
-      setAvisoCep({
-        tipo: "sucesso",
-        texto: logradouro ? "Endereço preenchido pelo CEP. Confira e informe o número." : "Cidade preenchida pelo CEP. Informe a rua e o bairro.",
-      });
-      // O próximo campo que só o operador sabe: número (ou o logradouro, se o CEP não trouxe a rua).
-      const proximo = formulario.elements.namedItem(logradouro ? "numero" : "logradouro");
-      if (proximo instanceof HTMLInputElement) proximo.focus();
-    });
-  }
 
   function buscarCnpj(botao: HTMLButtonElement) {
     const formulario = botao.form;
@@ -118,10 +50,9 @@ export function FormContribuinte({ acao, valoresIniciais, rotuloEnviar, hrefCanc
         return;
       }
       const { situacaoCadastral, ...dados } = resultado.dados;
-      preencher(formulario, dados);
+      preencherCampos(formulario, dados);
       // O endereço já veio da Receita: não precisa buscar o CEP de novo ao sair do campo.
-      setUltimoCep(dados.cep);
-      setAvisoCep(null);
+      buscaCep.marcarConsultado(dados.cep);
       setAvisoCnpj(
         situacaoCadastral && situacaoCadastral !== "ATIVA"
           ? { tipo: "atencao", texto: `Dados preenchidos, mas a situação deste CNPJ na Receita é ${situacaoCadastral}.` }
@@ -233,14 +164,9 @@ export function FormContribuinte({ acao, valoresIniciais, rotuloEnviar, hrefCanc
       <fieldset className="grid gap-4 sm:grid-cols-6">
         <legend className="mb-3 text-base font-semibold">Endereço</legend>
         <div className="sm:col-span-2">
-          {campo("cep", "CEP", { dica: "00000-000", maximo: 9, aoSair: buscarCep })}
-          {consultandoCep ? (
-            <p role="status" className="mt-1 text-sm text-zinc-500">
-              Buscando endereço…
-            </p>
-          ) : (
-            <Aviso aviso={avisoCep} />
-          )}
+          {campo("cep", "CEP", { dica: "00000-000", maximo: 9, aoSair: buscaCep.buscar })}
+          <Aviso aviso={buscaCep.aviso} carregando={buscaCep.consultando ? "Buscando endereço…" : undefined} />
+
         </div>
         <div className="sm:col-span-4">{campo("logradouro", "Logradouro", { maximo: 150 })}</div>
         <div className="sm:col-span-2">{campo("numero", "Número", { maximo: 10 })}</div>

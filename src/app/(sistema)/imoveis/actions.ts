@@ -13,7 +13,22 @@ import {
   InscricaoJaCadastradaError,
   ProprietarioNaoEncontradoError,
 } from "@/server/services/imoveis";
+import type { EnderecoCep } from "@/lib/brasilapi";
+import { executarConsulta, type ResultadoConsulta } from "@/server/consulta-acao";
+import { buscarEnderecoPorCep } from "@/server/services/consultas-externas";
 import { AcessoNegadoError, exigirPermissaoAcao, type UsuarioLogado } from "@/server/sessao";
+
+/** O que a consulta de CEP preenche no imóvel: cidade e UF são sempre as do município do sistema. */
+export type EnderecoImovelCep = Pick<EnderecoCep, "cep" | "logradouro" | "bairro">;
+
+/** Busca rua e bairro pelo CEP (BrasilAPI) para o formulário de imóvel. Nada é gravado. */
+export async function consultarCepImovel(cep: string): Promise<ResultadoConsulta<EnderecoImovelCep>> {
+  return executarConsulta([{ imovel: ["criar"] }, { imovel: ["editar"] }], async () => {
+    // Só o necessário volta ao navegador: a cidade real do CEP não interessa ao imóvel.
+    const { cep: digitos, logradouro, bairro } = await buscarEnderecoPorCep(String(cep));
+    return { cep: digitos, logradouro, bairro };
+  });
+}
 
 export type CampoImovel = keyof ImovelEntrada;
 
