@@ -38,9 +38,13 @@ export function FormImovel({ acao, valoresIniciais, nomeProprietario, rotuloEnvi
     cepInicial: valores.cep,
     consultar: consultarCepImovel,
     campos: ["logradouro", "bairro"],
-    mensagens: {
-      comRua: `Rua e bairro preenchidos pelo CEP (o município continua ${MUNICIPIO.nome}/${MUNICIPIO.uf}). Informe o número.`,
-      semRua: "Este CEP não indica a rua. Informe o logradouro e o bairro.",
+    mensagem: ({ logradouro, cidade, uf }) => {
+      const municipio = `${MUNICIPIO.nome}/${MUNICIPIO.uf}`;
+      // O CEP é real e o município do sistema é fictício: deixar claro por que as cidades diferem.
+      const origem = `Este CEP é de ${cidade}/${uf}, mas o imóvel fica em ${municipio} (município fictício do sistema).`;
+      return logradouro
+        ? `${origem} Aproveitamos só a rua e o bairro. Confira e informe o número.`
+        : `${origem} É um CEP geral, sem rua: informe o logradouro e o bairro.`;
     },
   });
 

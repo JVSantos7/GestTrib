@@ -55,8 +55,8 @@ type OpcoesBuscaCep<T extends { logradouro: string }> = {
   consultar: (cep: string) => Promise<ResultadoConsulta<T>>;
   /** Campos do formulário que o CEP preenche (e apaga, se o CEP não existir). */
   campos: readonly (keyof T & string)[];
-  /** Aviso de sucesso quando o CEP traz a rua, e quando é um CEP geral (só a cidade). */
-  mensagens: { comRua: string; semRua: string };
+  /** Aviso de sucesso, montado com o que o CEP trouxe (ex.: CEP geral, sem rua). */
+  mensagem: (dados: T) => string;
 };
 
 /** Busca o endereço quando o operador sai do campo CEP. Ligue `buscar` no onBlur do campo. */
@@ -64,7 +64,7 @@ export function useBuscaCep<T extends { logradouro: string }>({
   cepInicial,
   consultar,
   campos,
-  mensagens,
+  mensagem,
 }: OpcoesBuscaCep<T>) {
   const [consultando, iniciarConsulta] = useTransition();
   const [aviso, setAviso] = useState<AvisoConsulta | null>(null);
@@ -97,7 +97,7 @@ export function useBuscaCep<T extends { logradouro: string }>({
       preencherCampos(formulario, Object.fromEntries(campos.map((nome) => [nome, String(dados[nome] ?? "")])), {
         apagarVazios: true,
       });
-      setAviso({ tipo: "sucesso", texto: dados.logradouro ? mensagens.comRua : mensagens.semRua });
+      setAviso({ tipo: "sucesso", texto: mensagem(dados) });
       // O próximo campo que só o operador sabe: número (ou o logradouro, se o CEP não trouxe a rua).
       const proximo = formulario.elements.namedItem(dados.logradouro ? "numero" : "logradouro");
       if (proximo instanceof HTMLInputElement) proximo.focus();

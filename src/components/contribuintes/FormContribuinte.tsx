@@ -29,10 +29,10 @@ export function FormContribuinte({ acao, valoresIniciais, rotuloEnviar, hrefCanc
     cepInicial: valores.cep,
     consultar: consultarCep,
     campos: ["logradouro", "bairro", "cidade", "uf"],
-    mensagens: {
-      comRua: "Endereço preenchido pelo CEP. Confira e informe o número.",
-      semRua: "Cidade preenchida pelo CEP. Informe a rua e o bairro.",
-    },
+    mensagem: ({ logradouro, cidade, uf }) =>
+      logradouro
+        ? "Endereço preenchido pelo CEP. Confira e informe o número."
+        : `CEP geral de ${cidade}/${uf}: ele não indica a rua. Informe o logradouro e o bairro.`,
   });
   const [consultandoCnpj, iniciarConsultaCnpj] = useTransition();
   const [avisoCnpj, setAvisoCnpj] = useState<AvisoConsulta | null>(null);
