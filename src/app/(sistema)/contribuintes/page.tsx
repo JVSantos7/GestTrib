@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Form from "next/form";
 import Link from "next/link";
+import { BotaoBuscar } from "@/components/form/BotaoBuscar";
 import { mascararDocumento } from "@/lib/documento";
 import { lerFiltrosContribuintes, urlContribuintes } from "@/lib/schemas/filtros-contribuintes";
 import { ROTULOS_SITUACAO_FISCAL, SITUACOES_FISCAIS } from "@/lib/situacao-fiscal";
@@ -82,12 +83,7 @@ export default async function Contribuintes({ searchParams }: PageProps<"/contri
             </select>
           </div>
         )}
-        <button
-          type="submit"
-          className="rounded-md bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white"
-        >
-          Buscar
-        </button>
+        <BotaoBuscar />
         {filtrando && (
           <Link
             href="/contribuintes"

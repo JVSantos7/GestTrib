@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Form from "next/form";
 import Link from "next/link";
+import { BotaoBuscar } from "@/components/form/BotaoBuscar";
 import { CLASSE_BOTAO_PRIMARIO, CLASSE_CAMPO } from "@/components/form/estilos";
 import { formatarDecimalBr } from "@/lib/decimal";
 import { lerFiltrosImoveis, urlImoveis } from "@/lib/schemas/filtros-imoveis";
@@ -64,12 +65,7 @@ export default async function Imoveis({ searchParams }: PageProps<"/imoveis">) {
             ))}
           </select>
         </div>
-        <button
-          type="submit"
-          className="rounded-md bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white"
-        >
-          Buscar
-        </button>
+        <BotaoBuscar />
         {filtrando && (
           <Link
             href="/imoveis"

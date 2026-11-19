@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Form from "next/form";
 import Link from "next/link";
+import { BotaoBuscar } from "@/components/form/BotaoBuscar";
 import { lancarExercicioAcao } from "@/app/(sistema)/iptu/actions";
 import { CLASSE_CAMPO } from "@/components/form/estilos";
 import { FormLancarExercicio } from "@/components/iptu/FormulariosIptu";
@@ -103,12 +104,7 @@ export default async function Lancamentos({ searchParams }: PageProps<"/iptu">) 
             ))}
           </select>
         </div>
-        <button
-          type="submit"
-          className="rounded-md bg-zinc-800 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-zinc-900 dark:hover:bg-white"
-        >
-          Buscar
-        </button>
+        <BotaoBuscar />
         {filtrando && (
           <Link
             href="/iptu"
